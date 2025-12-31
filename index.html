@@ -196,7 +196,7 @@
 
     <div id="input-area">
         <input type="text" id="jpy-input" placeholder="日幣金額: 1500 晚餐 or 280 水" autofocus>
-        <input type="number" id="twd-input" placeholder="台幣金額 (刷卡換匯): 320" style="margin-top: 10px;">
+        <input type="text" id="twd-input" placeholder="台幣換匯: 320.5 中信卡 0.21" style="margin-top: 10px;">
         <button onclick="addExpense()">+ 記錄這筆支出</button>
     </div>
 
@@ -257,23 +257,25 @@
         // --- 核心功能：新增支出 ---
         function addExpense() {
             const jpyInputText = jpyInput.value.trim();
-            const twdAmountText = twdInput.value.trim();
+            const twdInputText = twdInput.value.trim(); // 獲取台幣輸入的文字
 
             if (!jpyInputText) {
                 alert('請輸入日幣金額和品項！');
                 return;
             }
             
-            // --- 解析日幣輸入（日幣金額 + 品項） ---
-            const match = jpyInputText.match(/^(\d+[\d\.]*)\s*(.*)/);
-
+            // --- 變數初始化 ---
             let jpyAmount = 0;
-            let description = jpyInputText;
+            let description = ''; // 紀錄日幣品項
             let twdAmount = 0;
+            let twdNote = ''; // 紀錄台幣備註
 
-            if (match) {
-                jpyAmount = parseFloat(match[1]);
-                description = match[2] || '未說明品項';
+            // --- 解析日幣輸入（日幣金額 + 品項） ---
+            const jpyMatch = jpyInputText.match(/^(\d+[\d\.]*)\s*(.*)/);
+
+            if (jpyMatch) {
+                jpyAmount = parseFloat(jpyMatch[1]);
+                description = jpyMatch[2] || '未說明品項';
             } else {
                 alert('日幣輸入格式建議為: 金額 品項 (例如: 1500 晚餐)');
                 return;
@@ -284,9 +286,19 @@
                  return;
             }
             
-            // --- 解析台幣輸入 ---
-            if (twdAmountText) {
-                twdAmount = parseFloat(twdAmountText);
+            // --- 解析台幣輸入（台幣金額 + 備註） ---
+            if (twdInputText) {
+                const twdMatch = twdInputText.match(/^(\d+[\d\.]*)\s*(.*)/);
+                
+                if (twdMatch) {
+                    twdAmount = parseFloat(twdMatch[1]);
+                    twdNote = twdMatch[2] || ''; // 記錄台幣備註，可為空
+                } else {
+                    // 如果輸入了台幣但格式不對，給予提示
+                    alert('台幣輸入格式建議為: 金額 備註 (例如: 320.5 刷卡)');
+                    return;
+                }
+                
                 if (isNaN(twdAmount) || twdAmount < 0) {
                     alert('台幣金額輸入無效！');
                     return;
@@ -295,17 +307,18 @@
             
             const newExpense = {
                 id: Date.now(),
-                jpy_amount: jpyAmount, // 儲存日幣金額
-                twd_amount: twdAmount, // 儲存台幣金額
+                jpy_amount: jpyAmount,
+                twd_amount: twdAmount,
                 description: description.trim(),
+                twd_note: twdNote.trim(), // 新增台幣備註
                 date: getTodayDateString()
             };
 
             expenses.unshift(newExpense);
             saveAndRefresh();
 
-            jpyInput.value = ''; // 清空日幣輸入
-            twdInput.value = ''; // 清空台幣輸入
+            jpyInput.value = '';
+            twdInput.value = '';
             jpyInput.focus(); 
         }
 
@@ -388,14 +401,20 @@
                 ul.className = 'expense-list';
 
                 dailyExpenses.forEach(expense => {
-                    // 只有當 twd_amount > 0 才顯示台幣金額
-                    const twdDisplay = expense.twd_amount > 0 
-                        ? `<span class="twd-display">(NT$ ${expense.twd_amount.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>` 
-                        : '';
+                    let twdText = '';
+                    if (expense.twd_amount > 0) {
+                        // 台幣金額
+                        twdText += `NT$ ${expense.twd_amount.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        // 台幣備註
+                        if (expense.twd_note) {
+                            twdText += ` [${expense.twd_note}]`;
+                        }
+                        twdText = `<span class="twd-display">(${twdText})</span>`;
+                    }
                     
                     const li = document.createElement('li');
                     li.innerHTML = `
-                        <span class="item-description">${expense.description} ${twdDisplay}</span>
+                        <span class="item-description">${expense.description} ${twdText}</span>
                         <span class="item-amount">¥ ${expense.jpy_amount.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
                         <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
                     `;
