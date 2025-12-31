@@ -195,8 +195,8 @@
     </div>
 
     <div id="input-area">
-        <input type="text" id="jpy-input" placeholder="日幣金額: 1500 晚餐 or 280 水" autofocus>
-        <input type="text" id="twd-input" placeholder="台幣換匯: 320.5 中信卡 0.21" style="margin-top: 10px;">
+        <input type="text" id="jpy-input" placeholder="日幣金額: 1500 晚餐" autofocus>
+        <input type="text" id="twd-input" placeholder="台幣金額: 320.5 機票" style="margin-top: 10px;">
         <button onclick="addExpense()">+ 記錄這筆支出</button>
     </div>
 
@@ -251,73 +251,77 @@
                 }
             });
         }
+        
+        // --- 核心解析函數：解析 [金額 品項] 格式 ---
+        function parseExpenseInput(inputText, currency) {
+            const match = inputText.match(/^(\d+[\d\.]*)\s*(.*)/);
+            let amount = 0;
+            let description = '';
 
-        // --- 核心功能：新增支出 ---
+            if (match) {
+                amount = parseFloat(match[1]);
+                description = match[2] || `${currency}支出`;
+            }
+
+            if (isNaN(amount) || amount < 0) {
+                return { error: `請輸入有效的${currency}金額！` };
+            }
+            
+            return { amount, description: description.trim() };
+        }
+
+        // --- 核心功能：新增支出 (修正為單筆提交) ---
         function addExpense() {
             const jpyInputText = jpyInput.value.trim();
             const twdInputText = twdInput.value.trim(); 
 
-            // 確保至少一個輸入框有內容
+            // 1. 檢查是否同時輸入兩個欄位
+            if (jpyInputText && twdInputText) {
+                alert('請分開記錄！您不能同時在日幣和台幣欄位輸入資料。');
+                return;
+            }
+
+            // 2. 檢查是否都沒有輸入
             if (!jpyInputText && !twdInputText) {
                 alert('請至少輸入日幣或台幣其中一筆記錄！');
                 return;
             }
             
-            // --- 變數初始化 ---
-            let jpyAmount = 0;
-            let description = ''; 
-            let twdAmount = 0;
-            let twdNote = ''; 
+            let amount = 0;
+            let description = '';
+            let isJpy = false;
 
-            // --- 處理日幣輸入（日幣金額 + 品項） ---
             if (jpyInputText) {
-                const jpyMatch = jpyInputText.match(/^(\d+[\d\.]*)\s*(.*)/);
-
-                if (jpyMatch) {
-                    jpyAmount = parseFloat(jpyMatch[1]);
-                    description = jpyMatch[2] || '日幣支出'; // 如果沒有品項，使用預設值
-                } else {
-                    alert('日幣輸入格式建議為: 金額 品項 (例如: 1500 晚餐)');
+                // 處理日幣輸入
+                const result = parseExpenseInput(jpyInputText, '日幣');
+                if (result.error) {
+                    alert(result.error);
                     return;
                 }
+                amount = result.amount;
+                description = result.description;
+                isJpy = true;
 
-                if (isNaN(jpyAmount) || jpyAmount < 0) { // 允許 0，但警示
-                     alert('請輸入有效的日幣金額！');
-                     return;
-                }
-            }
-            
-            // --- 處理台幣輸入（台幣金額 + 備註） ---
-            if (twdInputText) {
-                const twdMatch = twdInputText.match(/^(\d+[\d\.]*)\s*(.*)/);
-                
-                if (twdMatch) {
-                    twdAmount = parseFloat(twdMatch[1]);
-                    twdNote = twdMatch[2] || '台幣支出'; // 如果沒有備註，使用預設值
-                } else {
-                    alert('台幣輸入格式建議為: 金額 備註 (例如: 320.5 刷卡)');
+            } else if (twdInputText) {
+                // 處理台幣輸入
+                const result = parseExpenseInput(twdInputText, '台幣');
+                if (result.error) {
+                    alert(result.error);
                     return;
                 }
-                
-                if (isNaN(twdAmount) || twdAmount < 0) {
-                    alert('台幣金額輸入無效！');
-                    return;
-                }
-            }
-            
-            // 如果同時輸入了兩個金額，但沒有輸入日幣品項，將台幣備註作為日幣品項
-            if (!description && twdNote) {
-                description = twdNote;
-            } else if (!description && !twdNote) {
-                 description = '複合支出'; // 兩個都沒輸入描述，給一個預設值
+                amount = result.amount;
+                description = result.description;
+                isJpy = false;
             }
 
+            // 3. 創建新的支出記錄 (只會記錄其中一個幣別，另一個為 0)
             const newExpense = {
                 id: Date.now(),
-                jpy_amount: jpyAmount,
-                twd_amount: twdAmount,
-                description: description.trim(),
-                twd_note: twdNote.trim(), 
+                // 如果是日幣記錄，jpy_amount = amount，twd_amount = 0
+                // 如果是台幣記錄，jpy_amount = 0，twd_amount = amount
+                jpy_amount: isJpy ? amount : 0,
+                twd_amount: isJpy ? 0 : amount,
+                description: description, 
                 date: getTodayDateString()
             };
 
@@ -350,20 +354,17 @@
             calculateTotal();
         }
 
-        // --- 畫面更新：計算總額 ---
+        // --- 畫面更新：計算總額 (保持獨立加總) ---
         function calculateTotal() {
-            // 日幣和台幣分開獨立計算加總
             const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
             const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
 
-            // 格式化日幣總額
             totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
             
-            // 格式化台幣總額 (保留兩位小數)
             totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // --- 畫面更新：渲染列表 (新增日期分組邏輯) ---
+        // --- 畫面更新：渲染列表 (只顯示該筆記錄的有效幣別) ---
         function renderExpenses() {
             expenseListContainer.innerHTML = ''; 
 
@@ -409,22 +410,22 @@
 
                 dailyExpenses.forEach(expense => {
                     
-                    // 組合台幣顯示文字 (金額 + 備註)
                     let twdText = '';
+                    let jpyAmountText = '';
+
                     if (expense.twd_amount > 0) {
-                        twdText += `NT$ ${expense.twd_amount.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                        if (expense.twd_note && expense.twd_note !== '台幣支出') { // 避免顯示預設的 '台幣支出' 備註
-                            twdText += ` [${expense.twd_note}]`;
-                        }
-                        twdText = `<span class="twd-display">(${twdText})</span>`;
+                        // 顯示台幣金額
+                        twdText = `<span class="twd-display">(NT$ ${expense.twd_amount.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>`;
+                        jpyAmountText = ''; // 確保 JPY 欄位為空
                     }
                     
-                    // 決定日幣顯示的文字
-                    let jpyAmountText = expense.jpy_amount > 0 
-                        ? `¥ ${expense.jpy_amount.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}` 
-                        : '';
+                    if (expense.jpy_amount > 0) {
+                        // 顯示日幣金額
+                        jpyAmountText = `¥ ${expense.jpy_amount.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}`;
+                        twdText = ''; // 確保 TWD 欄位為空
+                    }
 
-                    // 如果只有台幣金額，日幣欄位不顯示
+
                     const li = document.createElement('li');
                     li.innerHTML = `
                         <span class="item-description">${expense.description} ${twdText}</span>
