@@ -97,11 +97,23 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
         
+        /* 歷史記錄區塊標題和按鈕的容器 */
+        #history-header {
+            display: flex; /* 啟用彈性佈局 */
+            justify-content: space-between; /* 標題靠左，按鈕靠右 */
+            align-items: center; /* 垂直居中 */
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 10px; /* 增加間距 */
+        }
+        
         /* 區塊標題 */
         h2 {
             color: #333;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+            border-bottom: none; 
+            padding-bottom: 0;
+            margin-bottom: 0;
             margin-top: 0;
         }
         
@@ -193,6 +205,18 @@
             color: #d32f2f;
         }
 
+        /* 匯出按鈕的樣式 */
+        #export-btn {
+            width: auto; /* 覆蓋全寬設定 */
+            padding: 8px 15px;
+            background-color: #008CBA; /* 藍色，表示匯出/資訊 */
+            font-size: 0.9em;
+        }
+
+        #export-btn:hover {
+            background-color: #007bb5;
+        }
+
         /* 清除按鈕 */
         #clear-btn {
             margin-top: 20px;
@@ -222,7 +246,10 @@
     </div>
 
     <div id="history-area">
-        <h2>🧾 支出歷史記錄</h2>
+        <div id="history-header">
+            <h2>🧾 支出歷史記錄</h2>
+            <button id="export-btn" onclick="exportToCsv()">匯出 Excel (CSV)</button>
+        </div>
         
         <h3 style="color: #d32f2f;">日幣支出 (¥)</h3>
         <div id="jpy-expense-list-container">
@@ -354,6 +381,43 @@
                 saveAndRefresh();
             }
         }
+        
+        // --- 核心功能：匯出數據為 CSV 格式 ---
+        function exportToCsv() {
+            if (expenses.length === 0) {
+                alert('沒有任何支出記錄可以匯出！');
+                return;
+            }
+
+            // CSV 標頭
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF 是 BOM，確保 Excel 正確顯示中文
+            csvContent += "日期,說明,日幣金額(¥),台幣金額(NT$)\n"; 
+
+            // 數據行
+            expenses.forEach(expense => {
+                // 將所有逗號替換為分號，防止 CSV 欄位混亂
+                const descriptionSafe = expense.description.replace(/,/g, ';'); 
+                
+                const jpy = expense.jpy_amount.toFixed(0); // 日幣不保留小數
+                const twd = expense.twd_amount.toFixed(0); // 台幣不保留小數
+                
+                csvContent += `${expense.date},${descriptionSafe},${jpy},${twd}\n`;
+            });
+
+            // 創建連結並下載文件
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            
+            // 設定下載檔名
+            const filename = `japan_budget_${new Date().toLocaleDateString('zh-TW').replace(/\//g, '-')}.csv`;
+            link.setAttribute("download", filename);
+            
+            // 點擊連結觸發下載
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         // --- 數據處理：儲存和刷新 ---
         function saveAndRefresh() {
@@ -362,13 +426,15 @@
             calculateTotal();
         }
 
-        // --- 畫面更新：計算總額 (保持獨立加總) ---
+        // --- 畫面更新：計算總額 (已修正台幣為無小數點) ---
         function calculateTotal() {
             const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
             const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
 
+            // 日幣總合計 (維持無小數點)
             totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
             
+            // 台幣總合計 (修正為無小數點)
             totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
         
@@ -397,7 +463,8 @@
                 
                 const currencySymbol = isJPY ? '¥' : 'NT$';
                 const currencyLocale = isJPY ? 'ja-JP' : 'zh-TW';
-                const fractionDigits = isJPY ? 0 : 0;
+                // 統一設置：日幣無小數，台幣也無小數
+                const fractionDigits = 0; 
                 const amountKey = isJPY ? 'jpy_amount' : 'twd_amount';
 
                 // a. 按日期分組
@@ -420,6 +487,7 @@
 
                     // 計算當日總支出
                     const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense[amountKey], 0);
+                    // 確保日總計也無小數點
                     const dailyTotalFormatted = dailyTotal.toLocaleString(currencyLocale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
 
                     // 日期分組標題
@@ -434,6 +502,7 @@
                     // 清單項目
                     dailyExpenses.forEach(expense => {
                         const itemAmount = expense[amountKey];
+                        // 確保單筆金額也無小數點
                         const itemAmountFormatted = itemAmount.toLocaleString(currencyLocale, { maximumFractionDigits: fractionDigits });
                         
                         htmlContent += `
