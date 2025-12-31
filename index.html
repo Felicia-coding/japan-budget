@@ -72,21 +72,29 @@
             text-align: center;
             margin-bottom: 20px;
             padding: 15px;
-            background-color: #fff165; /* 黃色 */
+            background-color: #ffd400; /* 黃色 */
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
+        /* 修正: 總額字體大小一致 */
         #total-jpy {
-            font-size: 2.0em;
+            font-size: 2.0em; 
             font-weight: bold;
             color: #d32f2f;
         }
         
         #total-twd {
-            font-size: 2.0em;
+            font-size: 2.0em; 
             font-weight: bold;
             color: #008080; /* 台幣用不同的顏色區分 */
+        }
+        
+        /* 調整說明文字的字體大小 */
+        #summary-area p {
+            font-size: 1.1em; 
+            margin: 5px 0 0 !important;
+            color: #555;
         }
 
         /* 歷史記錄區 */
@@ -233,9 +241,9 @@
     <h1>🇯🇵 日本旅遊雙幣記帳 💸</h1>
 
     <div id="summary-area">
-        <p style="margin: 0; font-size: 1.2em; color: #555;">總支出合計</p>
+        <p>日幣總支出合計</p>
         <div id="total-jpy">¥ 0</div>
-        <p style="margin: 5px 0 0; font-size: 1em; color: #555;">台幣總支出合計</p>
+        <p>台幣總支出合計</p>
         <div id="total-twd">NT$ 0</div>
     </div>
 
@@ -551,5 +559,3 @@
     </script>
 </body>
 </html>
-
-
