@@ -271,7 +271,7 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'japan_trip_expenses_v2'; 
+        const STORAGE_KEY = 'test_data_v2'; 
         const jpyInput = document.getElementById('jpy-input'); 
         const twdInput = document.getElementById('twd-input'); 
         
@@ -294,7 +294,7 @@
 
         // --- 工具函數：獲取今天的日期字符串 ---
         function getTodayDateString() {
-            return formatDate(new Date());
+            return formatDate(new Date(2025, 10, 5));
         }
 
         // --- 核心解析函數：解析 [金額 品項] 格式 ---
@@ -559,3 +559,4 @@
     </script>
 </body>
 </html>
+
