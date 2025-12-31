@@ -369,7 +369,7 @@
 
             totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
             
-            totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
         
         // --- 畫面更新：渲染列表 (分開處理 JPY 和 TWD) ---
@@ -397,7 +397,7 @@
                 
                 const currencySymbol = isJPY ? '¥' : 'NT$';
                 const currencyLocale = isJPY ? 'ja-JP' : 'zh-TW';
-                const fractionDigits = isJPY ? 0 : 2;
+                const fractionDigits = isJPY ? 0 : 0;
                 const amountKey = isJPY ? 'jpy_amount' : 'twd_amount';
 
                 // a. 按日期分組
