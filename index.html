@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本旅遊快速記帳</title>
+    <title>日本旅遊雙幣別記帳</title>
     <style>
         /* 基礎樣式 */
         body {
@@ -31,7 +31,7 @@
         }
 
         /* 輸入框樣式 */
-        #expense-input {
+        #jpy-input, #twd-input {
             width: calc(100% - 22px);
             padding: 15px;
             margin-bottom: 10px;
@@ -40,8 +40,12 @@
             font-size: 1.2em;
             box-sizing: border-box; /* 確保 padding 不會增加整體寬度 */
         }
+        
+        #twd-input {
+            margin-top: 5px; /* 台幣輸入框與日幣輸入框的間距 */
+        }
 
-        #expense-input::placeholder {
+        #jpy-input::placeholder, #twd-input::placeholder {
             color: #aaa;
         }
 
@@ -73,10 +77,16 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        #total-amount {
+        #total-jpy {
             font-size: 2.5em;
             font-weight: bold;
             color: #d32f2f;
+        }
+        
+        #total-twd {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #008080; /* 台幣用不同的顏色區分 */
         }
 
         /* 歷史記錄區 */
@@ -163,20 +173,30 @@
         #clear-btn:hover {
             background-color: #757575;
         }
+        
+        /* 台幣顯示樣式 */
+        .twd-display {
+            font-size: 0.9em; 
+            color: #008080; 
+            margin-left: 5px;
+        }
 
     </style>
 </head>
 <body>
 
-    <h1>🇯🇵 日本旅遊快速記帳 💸</h1>
+    <h1>🇯🇵 日本旅遊雙幣別記帳 💸</h1>
 
     <div id="summary-area">
         <p style="margin: 0; font-size: 1.2em; color: #555;">總支出合計</p>
-        <div id="total-amount">¥ 0</div>
+        <div id="total-jpy">¥ 0</div>
+        <p style="margin: 5px 0 0; font-size: 1em; color: #555;">總台幣換匯成本</p>
+        <div id="total-twd">NT$ 0</div>
     </div>
 
     <div id="input-area">
-        <input type="text" id="expense-input" placeholder="範例: 1500 晚餐 or 280 水" autofocus>
+        <input type="text" id="jpy-input" placeholder="日幣金額: 1500 晚餐 or 280 水" autofocus>
+        <input type="number" id="twd-input" placeholder="台幣金額 (刷卡換匯): 320" style="margin-top: 10px;">
         <button onclick="addExpense()">+ 記錄這筆支出</button>
     </div>
 
@@ -188,10 +208,12 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'japan_trip_expenses';
-        const expenseInput = document.getElementById('expense-input');
+        const STORAGE_KEY = 'japan_trip_expenses_v2'; // 更改 key 以避免與舊數據衝突
+        const jpyInput = document.getElementById('jpy-input'); // 日幣輸入框
+        const twdInput = document.getElementById('twd-input'); // 台幣輸入框
         const expenseListContainer = document.getElementById('expense-list-container');
-        const totalAmountDisplay = document.getElementById('total-amount');
+        const totalJpyDisplay = document.getElementById('total-jpy'); // 日幣總額顯示
+        const totalTwdDisplay = document.getElementById('total-twd'); // 台幣總額顯示
         let expenses = [];
 
         // --- 工具函數：格式化日期 ---
@@ -219,7 +241,13 @@
             renderExpenses();
             calculateTotal();
             // 設定 Enter 鍵提交
-            expenseInput.addEventListener('keydown', function(event) {
+            jpyInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    addExpense();
+                }
+            });
+            // 讓台幣輸入框按下 Enter 也可以提交
+            twdInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
                     addExpense();
                 }
@@ -228,48 +256,57 @@
 
         // --- 核心功能：新增支出 ---
         function addExpense() {
-            const input = expenseInput.value.trim();
-            if (!input) {
-                alert('請輸入金額和品項！');
+            const jpyInputText = jpyInput.value.trim();
+            const twdAmountText = twdInput.value.trim();
+
+            if (!jpyInputText) {
+                alert('請輸入日幣金額和品項！');
                 return;
             }
+            
+            // --- 解析日幣輸入（日幣金額 + 品項） ---
+            const match = jpyInputText.match(/^(\d+[\d\.]*)\s*(.*)/);
 
-            // 使用正則表達式尋找輸入開頭的數字（金額）
-            // 匹配格式: 1500 晚餐 或 280 水
-            const match = input.match(/^(\d+[\d\.]*)\s*(.*)/);
-
-            let amount = 0;
-            let description = input;
+            let jpyAmount = 0;
+            let description = jpyInputText;
+            let twdAmount = 0;
 
             if (match) {
-                // match[1] 是金額 (例如: 1500 或 280.5)
-                // match[2] 是品項 (例如: 晚餐 或 水)
-                amount = parseFloat(match[1]);
-                description = match[2] || '未說明品項'; // 如果沒有品項，則使用預設
+                jpyAmount = parseFloat(match[1]);
+                description = match[2] || '未說明品項';
             } else {
-                // 如果沒有數字開頭，可能只是輸入了品項，金額設為 0
-                alert('輸入格式建議為: 金額 品項 (例如: 1500 晚餐)');
+                alert('日幣輸入格式建議為: 金額 品項 (例如: 1500 晚餐)');
                 return;
             }
 
-            if (isNaN(amount) || amount <= 0) {
-                 alert('請輸入有效的金額！');
+            if (isNaN(jpyAmount) || jpyAmount <= 0) {
+                 alert('請輸入有效的日幣金額！');
                  return;
             }
-
-
+            
+            // --- 解析台幣輸入 ---
+            if (twdAmountText) {
+                twdAmount = parseFloat(twdAmountText);
+                if (isNaN(twdAmount) || twdAmount < 0) {
+                    alert('台幣金額輸入無效！');
+                    return;
+                }
+            }
+            
             const newExpense = {
-                id: Date.now(), // 使用時間戳作為唯一ID
-                amount: amount,
+                id: Date.now(),
+                jpy_amount: jpyAmount, // 儲存日幣金額
+                twd_amount: twdAmount, // 儲存台幣金額
                 description: description.trim(),
-                date: getTodayDateString() // 新增日期記錄
+                date: getTodayDateString()
             };
 
-            expenses.unshift(newExpense); // 新增到列表的最前面
+            expenses.unshift(newExpense);
             saveAndRefresh();
 
-            expenseInput.value = ''; // 清空輸入框
-            expenseInput.focus(); // 讓焦點停留在輸入框，方便快速輸入下一筆
+            jpyInput.value = ''; // 清空日幣輸入
+            twdInput.value = ''; // 清空台幣輸入
+            jpyInput.focus(); 
         }
 
         // --- 核心功能：刪除單筆支出 ---
@@ -296,9 +333,14 @@
 
         // --- 畫面更新：計算總額 ---
         function calculateTotal() {
-            const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-            // 格式化數字，加上逗號
-            totalAmountDisplay.textContent = '¥ ' + total.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+            const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
+            const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
+
+            // 格式化日幣總額
+            totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+            
+            // 格式化台幣總額 (保留兩位小數，方便計算匯率)
+            totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         // --- 畫面更新：渲染列表 (新增日期分組邏輯) ---
@@ -328,13 +370,17 @@
                 const dailyExpenses = groupedExpenses[date];
 
                 // 計算當日總支出
-                const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-                const dailyTotalFormatted = dailyTotal.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+                const dailyTotalJpy = dailyExpenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
+                const dailyTotalJpyFormatted = dailyTotalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+                
+                const dailyTotalTwd = dailyExpenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
+                const dailyTotalTwdFormatted = dailyTotalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 
                 // 創建日期分組標題
                 const dateGroupDiv = document.createElement('div');
                 dateGroupDiv.className = 'date-group';
-                dateGroupDiv.innerHTML = `<span>${date}</span> <span>當日合計: ¥ ${dailyTotalFormatted}</span>`;
+                dateGroupDiv.innerHTML = `<span>${date}</span> <span>合計: ¥ ${dailyTotalJpyFormatted} (NT$ ${dailyTotalTwdFormatted})</span>`;
                 expenseListContainer.appendChild(dateGroupDiv);
 
                 // 創建支出列表
@@ -342,10 +388,15 @@
                 ul.className = 'expense-list';
 
                 dailyExpenses.forEach(expense => {
+                    // 只有當 twd_amount > 0 才顯示台幣金額
+                    const twdDisplay = expense.twd_amount > 0 
+                        ? `<span class="twd-display">(NT$ ${expense.twd_amount.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>` 
+                        : '';
+                    
                     const li = document.createElement('li');
                     li.innerHTML = `
-                        <span class="item-description">${expense.description}</span>
-                        <span class="item-amount">¥ ${expense.amount.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
+                        <span class="item-description">${expense.description} ${twdDisplay}</span>
+                        <span class="item-amount">¥ ${expense.jpy_amount.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
                         <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
                     `;
                     ul.appendChild(li);
@@ -354,7 +405,7 @@
             });
         }
         
-        // **!!! 程式碼的結尾關鍵：確保呼叫 init() 函數 !!!**
+        // **程式碼的結尾關鍵：確保呼叫 init() 函數**
         window.onload = init; // 在網頁載入完成後，執行初始化函數
     </script>
 </body>
