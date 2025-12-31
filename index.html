@@ -96,12 +96,20 @@
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
-
+        
+        /* 區塊標題 */
         h2 {
             color: #333;
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
             margin-top: 0;
+        }
+        
+        /* 次級標題 (日幣/台幣) */
+        h3 {
+            margin-top: 25px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
         }
 
         /* 日期分組標題樣式 */
@@ -109,22 +117,32 @@
             margin-top: 20px;
             margin-bottom: 10px;
             padding: 8px 10px;
-            background-color: #e0f7fa; /* 淺藍色背景 */
-            color: #00796b; /* 深藍綠色文字 */
             font-weight: bold;
             border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+        
+        /* 日幣日期分組 */
+        #jpy-expense-list-container .date-group {
+            background-color: #fbe4e4; /* 淺紅色背景 */
+            color: #d32f2f; /* 深紅色文字 */
+        }
+        
+        /* 台幣日期分組 */
+        #twd-expense-list-container .date-group {
+            background-color: #e0f7fa; /* 淺藍色背景 */
+            color: #008080; /* 深藍綠色文字 */
+        }
 
-        #expense-list {
+        .expense-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
 
-        #expense-list li {
+        .expense-list li {
             padding: 12px 0;
             border-bottom: 1px dashed #eee;
             display: flex;
@@ -132,7 +150,7 @@
             align-items: center;
             font-size: 1.1em;
         }
-        #expense-list li:last-child {
+        .expense-list li:last-child {
             border-bottom: none;
         }
 
@@ -142,11 +160,22 @@
             color: #555;
         }
 
+        /* 金額顯示樣式 */
         .item-amount {
             font-weight: bold;
-            color: #d32f2f;
             white-space: nowrap; /* 防止金額換行 */
         }
+        
+        /* 日幣清單中的金額顏色 */
+        #jpy-expense-list-container .item-amount {
+            color: #d32f2f;
+        }
+        
+        /* 台幣清單中的金額顏色 */
+        #twd-expense-list-container .item-amount {
+            color: #008080;
+        }
+
 
         .delete-btn {
             background: none;
@@ -173,14 +202,6 @@
         #clear-btn:hover {
             background-color: #757575;
         }
-        
-        /* 台幣顯示樣式 */
-        .twd-display {
-            font-size: 0.9em; 
-            color: #008080; 
-            margin-left: 5px;
-        }
-
     </style>
 </head>
 <body>
@@ -202,8 +223,15 @@
 
     <div id="history-area">
         <h2>🧾 支出歷史記錄</h2>
-        <div id="expense-list-container">
+        
+        <h3 style="color: #d32f2f;">日幣支出 (¥)</h3>
+        <div id="jpy-expense-list-container">
             </div>
+        
+        <h3 style="color: #008080;">台幣支出 (NT$)</h3>
+        <div id="twd-expense-list-container">
+            </div>
+
         <button id="clear-btn" onclick="clearAllData()">清空所有記錄</button>
     </div>
 
@@ -211,7 +239,11 @@
         const STORAGE_KEY = 'japan_trip_expenses_v2'; 
         const jpyInput = document.getElementById('jpy-input'); 
         const twdInput = document.getElementById('twd-input'); 
-        const expenseListContainer = document.getElementById('expense-list-container');
+        
+        // 新增兩個分開的容器
+        const jpyExpenseListContainer = document.getElementById('jpy-expense-list-container');
+        const twdExpenseListContainer = document.getElementById('twd-expense-list-container');
+        
         const totalJpyDisplay = document.getElementById('total-jpy'); 
         const totalTwdDisplay = document.getElementById('total-twd'); 
         let expenses = [];
@@ -230,28 +262,6 @@
             return formatDate(new Date());
         }
 
-        // --- 初始化和載入數據 ---
-        function init() {
-            const storedExpenses = localStorage.getItem(STORAGE_KEY);
-            if (storedExpenses) {
-                expenses = JSON.parse(storedExpenses);
-            }
-            renderExpenses();
-            calculateTotal();
-            
-            // 設定 Enter 鍵提交
-            jpyInput.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter') {
-                    addExpense();
-                }
-            });
-            twdInput.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter') {
-                    addExpense();
-                }
-            });
-        }
-        
         // --- 核心解析函數：解析 [金額 品項] 格式 ---
         function parseExpenseInput(inputText, currency) {
             const match = inputText.match(/^(\d+[\d\.]*)\s*(.*)/);
@@ -270,14 +280,14 @@
             return { amount, description: description.trim() };
         }
 
-        // --- 核心功能：新增支出 (修正為單筆提交) ---
+        // --- 核心功能：新增支出 (單筆提交) ---
         function addExpense() {
             const jpyInputText = jpyInput.value.trim();
             const twdInputText = twdInput.value.trim(); 
 
             // 1. 檢查是否同時輸入兩個欄位
             if (jpyInputText && twdInputText) {
-                alert('請分開記錄！您不能同時在日幣和台幣欄位輸入資料。');
+                alert('請分開記錄！您不能同時在日幣和台幣欄位輸入資料。請清空其中一個欄位後再提交。');
                 return;
             }
 
@@ -317,8 +327,6 @@
             // 3. 創建新的支出記錄 (只會記錄其中一個幣別，另一個為 0)
             const newExpense = {
                 id: Date.now(),
-                // 如果是日幣記錄，jpy_amount = amount，twd_amount = 0
-                // 如果是台幣記錄，jpy_amount = 0，twd_amount = amount
                 jpy_amount: isJpy ? amount : 0,
                 twd_amount: isJpy ? 0 : amount,
                 description: description, 
@@ -363,82 +371,113 @@
             
             totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
-
-        // --- 畫面更新：渲染列表 (只顯示該筆記錄的有效幣別) ---
+        
+        // --- 畫面更新：渲染列表 (分開處理 JPY 和 TWD) ---
         function renderExpenses() {
-            expenseListContainer.innerHTML = ''; 
+            // 清空兩個容器
+            jpyExpenseListContainer.innerHTML = '';
+            twdExpenseListContainer.innerHTML = '';
 
             if (expenses.length === 0) {
-                expenseListContainer.innerHTML = '<p style="text-align: center; color: #999;">目前沒有記錄，快輸入第一筆支出吧！</p>';
+                jpyExpenseListContainer.innerHTML = '<p style="text-align: center; color: #999;">目前沒有日幣記錄。</p>';
+                twdExpenseListContainer.innerHTML = '<p style="text-align: center; color: #999;">目前沒有台幣記錄。</p>';
                 return;
             }
 
-            // 1. 按日期分組
-            const groupedExpenses = expenses.reduce((groups, expense) => {
-                const date = expense.date;
-                if (!groups[date]) {
-                    groups[date] = [];
+            // 1. 過濾支出列表
+            const jpyList = expenses.filter(e => e.jpy_amount > 0);
+            const twdList = expenses.filter(e => e.twd_amount > 0);
+
+            // 2. 輔助函數：渲染單一幣別的清單
+            function renderList(container, list, isJPY) {
+                if (list.length === 0) {
+                    container.innerHTML = `<p style="text-align: center; color: #999;">目前沒有${isJPY ? '日幣' : '台幣'}記錄。</p>`;
+                    return;
                 }
-                groups[date].push(expense);
-                return groups;
-            }, {});
-
-            // 2. 獲取日期鍵並排序 (確保日期新的在前面)
-            const sortedDates = Object.keys(groupedExpenses).sort().reverse();
-
-
-            sortedDates.forEach(date => {
-                const dailyExpenses = groupedExpenses[date];
-
-                // 計算當日總支出
-                const dailyTotalJpy = dailyExpenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
-                const dailyTotalJpyFormatted = dailyTotalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
                 
-                const dailyTotalTwd = dailyExpenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
-                const dailyTotalTwdFormatted = dailyTotalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const currencySymbol = isJPY ? '¥' : 'NT$';
+                const currencyLocale = isJPY ? 'ja-JP' : 'zh-TW';
+                const fractionDigits = isJPY ? 0 : 2;
+                const amountKey = isJPY ? 'jpy_amount' : 'twd_amount';
 
-
-                // 創建日期分組標題
-                const dateGroupDiv = document.createElement('div');
-                dateGroupDiv.className = 'date-group';
-                dateGroupDiv.innerHTML = `<span>${date}</span> <span>合計: ¥ ${dailyTotalJpyFormatted} (NT$ ${dailyTotalTwdFormatted})</span>`;
-                expenseListContainer.appendChild(dateGroupDiv);
-
-                // 創建支出列表
-                const ul = document.createElement('ul');
-                ul.className = 'expense-list';
-
-                dailyExpenses.forEach(expense => {
-                    
-                    let twdText = '';
-                    let jpyAmountText = '';
-
-                    if (expense.twd_amount > 0) {
-                        // 顯示台幣金額
-                        twdText = `<span class="twd-display">(NT$ ${expense.twd_amount.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>`;
-                        jpyAmountText = ''; // 確保 JPY 欄位為空
+                // a. 按日期分組
+                const groupedExpenses = list.reduce((groups, expense) => {
+                    const date = expense.date;
+                    if (!groups[date]) {
+                        groups[date] = [];
                     }
-                    
-                    if (expense.jpy_amount > 0) {
-                        // 顯示日幣金額
-                        jpyAmountText = `¥ ${expense.jpy_amount.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}`;
-                        twdText = ''; // 確保 TWD 欄位為空
-                    }
+                    groups[date].push(expense);
+                    return groups;
+                }, {});
 
+                // b. 獲取排序後的日期
+                const sortedDates = Object.keys(groupedExpenses).sort().reverse();
+                
+                let htmlContent = '';
 
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span class="item-description">${expense.description} ${twdText}</span>
-                        <span class="item-amount">${jpyAmountText}</span>
-                        <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
+                sortedDates.forEach(date => {
+                    const dailyExpenses = groupedExpenses[date];
+
+                    // 計算當日總支出
+                    const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense[amountKey], 0);
+                    const dailyTotalFormatted = dailyTotal.toLocaleString(currencyLocale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
+
+                    // 日期分組標題
+                    htmlContent += `
+                        <div class="date-group">
+                            <span>${date}</span> 
+                            <span>合計: ${currencySymbol} ${dailyTotalFormatted}</span>
+                        </div>
+                        <ul class="expense-list">
                     `;
-                    ul.appendChild(li);
+
+                    // 清單項目
+                    dailyExpenses.forEach(expense => {
+                        const itemAmount = expense[amountKey];
+                        const itemAmountFormatted = itemAmount.toLocaleString(currencyLocale, { maximumFractionDigits: fractionDigits });
+                        
+                        htmlContent += `
+                            <li>
+                                <span class="item-description">${expense.description}</span>
+                                <span class="item-amount">${currencySymbol} ${itemAmountFormatted}</span>
+                                <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
+                            </li>
+                        `;
+                    });
+
+                    htmlContent += `</ul>`;
                 });
-                expenseListContainer.appendChild(ul); 
+                
+                container.innerHTML = htmlContent;
+            }
+
+            // 3. 呼叫輔助函數，分別渲染 JPY 和 TWD
+            renderList(jpyExpenseListContainer, jpyList, true);
+            renderList(twdExpenseListContainer, twdList, false);
+        }
+        
+        // --- 初始化 ---
+        function init() {
+            const storedExpenses = localStorage.getItem(STORAGE_KEY);
+            if (storedExpenses) {
+                expenses = JSON.parse(storedExpenses);
+            }
+            renderExpenses();
+            calculateTotal();
+            
+            // 設定 Enter 鍵提交
+            jpyInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    addExpense();
+                }
+            });
+            twdInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    addExpense();
+                }
             });
         }
         
-        // **程式碼的結尾關鍵：確保呼叫 init() 函數**
         window.onload = init; 
     </script>
 </body>
