@@ -342,3 +342,20 @@
                 ul.className = 'expense-list';
 
                 dailyExpenses.forEach(expense => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="item-description">${expense.description}</span>
+                        <span class="item-amount">¥ ${expense.amount.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
+                        <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
+                    `;
+                    ul.appendChild(li);
+                });
+                expenseListContainer.appendChild(ul); // 將 ul 添加到容器中
+            });
+        }
+        
+        // **!!! 程式碼的結尾關鍵：確保呼叫 init() 函數 !!!**
+        window.onload = init; // 在網頁載入完成後，執行初始化函數
+    </script>
+</body>
+</html>
