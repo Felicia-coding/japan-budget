@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本旅遊快速記帳</title>
+    <style>
+        /* 基礎樣式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        /* 標題 */
+        h1 {
+            color: #d32f2f; /* 類似日本國旗的紅色 */
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* 輸入區塊樣式 */
+        #input-area {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        /* 輸入框樣式 */
+        #expense-input {
+            width: calc(100% - 22px);
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 1.2em;
+            box-sizing: border-box; /* 確保 padding 不會增加整體寬度 */
+        }
+
+        #expense-input::placeholder {
+            color: #aaa;
+        }
+
+        /* 按鈕樣式 */
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #4CAF50; /* 綠色，表示確認 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* 總金額顯示區 */
+        #summary-area {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #ffeb3b; /* 醒目的黃色 */
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #total-amount {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #d32f2f;
+        }
+
+        /* 歷史記錄區 */
+        #history-area {
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        /* 日期分組標題樣式 */
+        .date-group {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            background-color: #e0f7fa; /* 淺藍色背景 */
+            color: #00796b; /* 深藍綠色文字 */
+            font-weight: bold;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #expense-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #expense-list li {
+            padding: 12px 0;
+            border-bottom: 1px dashed #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1em;
+        }
+        #expense-list li:last-child {
+            border-bottom: none;
+        }
+
+        .item-description {
+            flex-grow: 1;
+            padding-right: 10px;
+            color: #555;
+        }
+
+        .item-amount {
+            font-weight: bold;
+            color: #d32f2f;
+            white-space: nowrap; /* 防止金額換行 */
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0 5px;
+            margin-left: 10px;
+            transition: color 0.2s;
+            width: auto; /* 覆蓋 button 的 100% 寬度 */
+        }
+
+        .delete-btn:hover {
+            color: #d32f2f;
+        }
+
+        /* 清除按鈕 */
+        #clear-btn {
+            margin-top: 20px;
+            background-color: #9e9e9e; /* 灰色 */
+        }
+
+        #clear-btn:hover {
+            background-color: #757575;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>🇯🇵 日本旅遊快速記帳 💸</h1>
+
+    <div id="summary-area">
+        <p style="margin: 0; font-size: 1.2em; color: #555;">總支出合計</p>
+        <div id="total-amount">¥ 0</div>
+    </div>
+
+    <div id="input-area">
+        <input type="text" id="expense-input" placeholder="範例: 1500 晚餐 or 280 水" autofocus>
+        <button onclick="addExpense()">+ 記錄這筆支出</button>
+    </div>
+
+    <div id="history-area">
+        <h2>🧾 支出歷史記錄</h2>
+        <div id="expense-list-container">
+            </div>
+        <button id="clear-btn" onclick="clearAllData()">清空所有記錄</button>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'japan_trip_expenses';
+        const expenseInput = document.getElementById('expense-input');
+        const expenseListContainer = document.getElementById('expense-list-container');
+        const totalAmountDisplay = document.getElementById('total-amount');
+        let expenses = [];
+
+        // --- 工具函數：格式化日期 ---
+        function formatDate(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            // 月份和日期確保是兩位數
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+
+        // --- 工具函數：獲取今天的日期字符串 ---
+        function getTodayDateString() {
+            return formatDate(new Date());
+        }
+
+        // --- 初始化和載入數據 ---
+        function init() {
+            // 從本地儲存載入數據
+            const storedExpenses = localStorage.getItem(STORAGE_KEY);
+            if (storedExpenses) {
+                expenses = JSON.parse(storedExpenses);
+            }
+            renderExpenses();
+            calculateTotal();
+            // 設定 Enter 鍵提交
+            expenseInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    addExpense();
+                }
+            });
+        }
+
+        // --- 核心功能：新增支出 ---
+        function addExpense() {
+            const input = expenseInput.value.trim();
+            if (!input) {
+                alert('請輸入金額和品項！');
+                return;
+            }
+
+            // 使用正則表達式尋找輸入開頭的數字（金額）
+            // 匹配格式: 1500 晚餐 或 280 水
+            const match = input.match(/^(\d+[\d\.]*)\s*(.*)/);
+
+            let amount = 0;
+            let description = input;
+
+            if (match) {
+                // match[1] 是金額 (例如: 1500 或 280.5)
+                // match[2] 是品項 (例如: 晚餐 或 水)
+                amount = parseFloat(match[1]);
+                description = match[2] || '未說明品項'; // 如果沒有品項，則使用預設
+            } else {
+                // 如果沒有數字開頭，可能只是輸入了品項，金額設為 0
+                alert('輸入格式建議為: 金額 品項 (例如: 1500 晚餐)');
+                return;
+            }
+
+            if (isNaN(amount) || amount <= 0) {
+                 alert('請輸入有效的金額！');
+                 return;
+            }
+
+
+            const newExpense = {
+                id: Date.now(), // 使用時間戳作為唯一ID
+                amount: amount,
+                description: description.trim(),
+                date: getTodayDateString() // 新增日期記錄
+            };
+
+            expenses.unshift(newExpense); // 新增到列表的最前面
+            saveAndRefresh();
+
+            expenseInput.value = ''; // 清空輸入框
+            expenseInput.focus(); // 讓焦點停留在輸入框，方便快速輸入下一筆
+        }
+
+        // --- 核心功能：刪除單筆支出 ---
+        function deleteExpense(id) {
+            expenses = expenses.filter(expense => expense.id !== id);
+            saveAndRefresh();
+        }
+
+        // --- 核心功能：清空所有數據 ---
+        function clearAllData() {
+            if (confirm('確定要清空所有記帳記錄嗎？這個操作無法復原。')) {
+                expenses = [];
+                saveAndRefresh();
+            }
+        }
+
+        // --- 數據處理：儲存和刷新 ---
+        function saveAndRefresh() {
+            // 儲存到瀏覽器的本地儲存
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+            renderExpenses();
+            calculateTotal();
+        }
+
+        // --- 畫面更新：計算總額 ---
+        function calculateTotal() {
+            const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            // 格式化數字，加上逗號
+            totalAmountDisplay.textContent = '¥ ' + total.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+        }
+
+        // --- 畫面更新：渲染列表 (新增日期分組邏輯) ---
+        function renderExpenses() {
+            expenseListContainer.innerHTML = ''; // 清空現有列表
+
+            if (expenses.length === 0) {
+                expenseListContainer.innerHTML = '<p style="text-align: center; color: #999;">目前沒有記錄，快輸入第一筆支出吧！</p>';
+                return;
+            }
+
+            // 1. 按日期分組
+            const groupedExpenses = expenses.reduce((groups, expense) => {
+                const date = expense.date;
+                if (!groups[date]) {
+                    groups[date] = [];
+                }
+                groups[date].push(expense);
+                return groups;
+            }, {});
+
+            // 2. 獲取日期鍵並排序 (確保日期新的在前面)
+            const sortedDates = Object.keys(groupedExpenses).sort().reverse();
+
+
+            sortedDates.forEach(date => {
+                const dailyExpenses = groupedExpenses[date];
+
+                // 計算當日總支出
+                const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                const dailyTotalFormatted = dailyTotal.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+
+                // 創建日期分組標題
+                const dateGroupDiv = document.createElement('div');
+                dateGroupDiv.className = 'date-group';
+                dateGroupDiv.innerHTML = `<span>${date}</span> <span>當日合計: ¥ ${dailyTotalFormatted}</span>`;
+                expenseListContainer.appendChild(dateGroupDiv);
+
+                // 創建支出列表
+                const ul = document.createElement('ul');
+                ul.className = 'expense-list';
+
+                dailyExpenses.forEach(expense => {
