@@ -222,7 +222,7 @@
         
         <h3>📝 日幣/台幣支出</h3>
         
-        <input type="text" id="jpy-amount-input" placeholder="日幣金額: 500 公車" autofocus>
+        <input type="text" id="jpy-amount-input" placeholder="日幣金額: 1000 門票" autofocus>
         
         <input type="text" id="twd-card-input" placeholder="台幣金額 (選填): 1080">
         
@@ -264,10 +264,10 @@
 
         // 卡別選項定義 (集中管理)
         const cardOptions = [
-            { value: "聯邦吉鶴卡", text: "聯邦吉鶴卡 (ApplePay)" },
-            { value: "永豐幣倍卡", text: "永豐幣倍卡 (ApplePay)" },
+            { value: "聯邦吉鶴卡", text: "聯邦吉鶴卡 (Apple Pay)" },
+            { value: "永豐幣倍卡", text: "永豐幣倍卡 (Apple Pay)" },
             { value: "玉山熊本熊卡", text: "玉山熊本熊卡 (paypay)" },
-            { value: "國泰CUBE卡", text: "國泰CUBE卡 (ApplePay)" },
+            { value: "國泰CUBE卡", text: "國泰CUBE卡 (Apple Pay)" },
         ];
         
         // --- 核心功能：初始化卡別選單 ---
@@ -323,7 +323,7 @@
             
             // 判斷邏輯
             if (twdText) {
-                // 模式 1: 卡刷 (台幣有值)
+                // 模式 1: 刷卡 (台幣有值)
                 type = 'CARD_JPY';
                 
                 if (!jpyText || !cardUsed) {
@@ -398,7 +398,7 @@
         
         function calculateTotal() {
             const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
-            // 只有卡刷模式的 TWD 才會計入總台幣
+            // 只有刷卡模式的 TWD 才會計入總台幣
             const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0); 
 
             totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
@@ -436,7 +436,7 @@
                 const twd = expense.twd_amount.toFixed(0); 
                 const card = expense.card_used || ''; 
                 
-                let typeName = (expense.type === 'CASH_JPY') ? '日幣現金' : '日幣卡刷';
+                let typeName = (expense.type === 'CASH_JPY') ? '日幣現金' : '日幣刷卡';
                 
                 csvContent += `${expense.date},${descriptionSafe},${typeName},${jpy},${twd},${card}\n`; 
             });
@@ -448,7 +448,7 @@
 
 
             csvContent += "\n\n"; 
-            csvContent += "日幣卡刷總結\n"; 
+            csvContent += "日幣刷卡總結\n"; 
             csvContent += "卡別,日幣總金額(¥),台幣總金額(NT$)\n";
             
             Object.keys(cardTotals).sort().forEach(card => {
@@ -474,7 +474,7 @@
         }
 
         function renderCardTotalsSummary(cardTotals) {
-            let html = '<div class="card-total-summary"><strong>各卡別總計 (旅行總和)</strong><br>';
+            let html = '<div class="card-total-summary"><strong>各卡別總計</strong><br>';
             
             const totalJpyForCard = Object.values(cardTotals).reduce((sum, item) => sum + item.jpy, 0);
             const totalTwdForCard = Object.values(cardTotals).reduce((sum, item) => sum + item.twd, 0);
@@ -494,10 +494,10 @@
                 `;
             });
             
-            // 顯示卡刷總計
+            // 顯示刷卡總計
             html += `
                 <div class="card-summary-item" style="font-weight: bold; margin-top: 5px; border-top: 2px solid #bbdefb; padding-top: 5px;">
-                    <span>卡刷總支出:</span>
+                    <span>刷卡總支出:</span>
                     <span style="color: #d32f2f;">¥ ${totalJpyForCard.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
                     <span style="color: #008080;">NT$ ${totalTwdForCard.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}</span>
                 </div>
@@ -513,7 +513,7 @@
 
             if (expenses.length === 0) {
                 jpyCashListContainer.innerHTML = '<h4>💵 日幣現金支出 (¥)</h4><p style="text-align: center; color: #999;">目前沒有記錄。</p>';
-                jpyCardListContainer.innerHTML = '<h4>💳 日幣卡刷支出 (¥/NT$)</h4><p style="text-align: center; color: #999;">目前沒有記錄。</p>';
+                jpyCardListContainer.innerHTML = '<h4>💳 日幣刷卡支出 (¥/NT$)</h4><p style="text-align: center; color: #999;">目前沒有記錄。</p>';
                 return;
             }
 
@@ -523,7 +523,7 @@
             jpyCashListContainer.innerHTML += `<h4>💵 日幣現金支出 (¥)</h4>`;
             renderList(jpyCashListContainer, jpyCashList, 'CASH_JPY');
 
-            jpyCardListContainer.innerHTML += `<h4>💳 日幣卡刷支出 (¥/NT$)</h4>`;
+            jpyCardListContainer.innerHTML += `<h4>💳 日幣刷卡支出 (¥/NT$)</h4>`;
             
             if (jpyCardList.length > 0) {
                 jpyCardListContainer.innerHTML += renderCardTotalsSummary(calculateCardTotals());
@@ -634,7 +634,7 @@
                         // 現金模式下，直接記錄
                         addExpense(); 
                     } else {
-                        // 卡刷模式下，切換到台幣金額
+                        // 刷卡模式下，切換到台幣金額
                         twdCardInput.focus(); 
                     }
                 }
@@ -659,5 +659,6 @@
     </script>
 </body>
 </html>
+
 
 
