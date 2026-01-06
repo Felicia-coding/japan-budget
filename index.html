@@ -315,12 +315,11 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'japan_trip'; // 您指定的新鑰匙
+        const STORAGE_KEY = 'japan_trip'; 
         const jpyInput = document.getElementById('jpy-input'); 
         const twdInput = document.getElementById('twd-input'); 
-        const twdCardSelect = document.getElementById('twd-card-select'); // *** 新增變數：卡別選單 ***
+        const twdCardSelect = document.getElementById('twd-card-select'); 
         
-        // 新增兩個分開的容器
         const jpyExpenseListContainer = document.getElementById('jpy-expense-list-container');
         const twdExpenseListContainer = document.getElementById('twd-expense-list-container');
         
@@ -380,7 +379,7 @@
             let amount = 0;
             let description = '';
             let isJpy = false;
-            let cardUsed = ''; // *** 新增變數：卡別 ***
+            let cardUsed = ''; 
 
             if (jpyInputText) {
                 // 處理日幣輸入
@@ -395,7 +394,7 @@
 
             } else if (twdInputText) {
                 // 處理台幣輸入
-                cardUsed = twdCardSelect.value; // *** 獲取卡片名稱 ***
+                cardUsed = twdCardSelect.value; 
                 
                 if (!cardUsed) {
                     alert('請選擇付款卡別或方式！');
@@ -419,7 +418,7 @@
                 twd_amount: isJpy ? 0 : amount,
                 description: description, 
                 date: getTodayDateString(),
-                card_used: cardUsed // *** 記錄卡別 ***
+                card_used: cardUsed 
             };
 
             expenses.unshift(newExpense);
@@ -445,39 +444,80 @@
             }
         }
         
-        // --- 核心功能：匯出數據為 CSV 格式 (新增 Card 欄位) ---
+        // --- 輔助函數：計算台幣卡別總計 ---
+        function calculateTwdCardTotals() {
+            const twdExpenses = expenses.filter(e => e.twd_amount > 0);
+            return twdExpenses.reduce((totals, expense) => {
+                const card = expense.card_used || '現金';
+                if (!totals[card]) {
+                    totals[card] = 0;
+                }
+                totals[card] += expense.twd_amount || 0;
+                return totals;
+            }, {});
+        }
+
+        // --- 核心功能：匯出數據為 CSV 格式 (**已修改**) ---
         function exportToCsv() {
             if (expenses.length === 0) {
                 alert('沒有任何支出記錄可以匯出！');
                 return;
             }
 
-            // CSV 標頭
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF 是 BOM，確保 Excel 正確顯示中文
-            csvContent += "日期,說明,日幣金額(¥),台幣金額(NT$),付款卡別\n"; // *** 新增欄位 ***
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            
+            // ==========================================================
+            // 1. 匯出支出記錄清單
+            // ==========================================================
 
-            // 數據行
+            csvContent += "日期,說明,日幣金額(¥),台幣金額(NT$),付款卡別\n"; 
+
             expenses.forEach(expense => {
                 // 將所有逗號替換為分號，防止 CSV 欄位混亂
                 const descriptionSafe = expense.description.replace(/,/g, ';'); 
                 
                 const jpy = expense.jpy_amount.toFixed(0); 
                 const twd = expense.twd_amount.toFixed(0); 
-                const card = expense.card_used || ''; // 處理日幣沒有卡別的情況
+                const card = expense.card_used || ''; 
                 
-                csvContent += `${expense.date},${descriptionSafe},${jpy},${twd},${card}\n`; // *** 匯出卡別 ***
+                csvContent += `${expense.date},${descriptionSafe},${jpy},${twd},${card}\n`; 
             });
 
-            // 創建連結並下載文件
+            // ==========================================================
+            // 2. 新增卡別總計區塊 (TWD)
+            // ==========================================================
+            
+            const cardTotals = calculateTwdCardTotals();
+            const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
+
+            // 兩行空白，作為分隔
+            csvContent += "\n\n"; 
+            
+            // 標題
+            csvContent += "台幣卡別總結 (NT$)\n"; 
+            csvContent += "卡別,總金額(NT$)\n";
+            
+            // 數據行
+            Object.keys(cardTotals).sort().forEach(card => {
+                const cardAmount = cardTotals[card].toFixed(0);
+                csvContent += `${card},${cardAmount}\n`;
+            });
+
+            // 總計行
+            csvContent += `總計(TWD),${totalTwd.toFixed(0)}\n`;
+
+
+            // ==========================================================
+            // 3. 執行下載
+            // ==========================================================
+
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             
-            // 設定下載檔名
             const filename = `japan_budget_${new Date().toLocaleDateString('zh-TW').replace(/\//g, '-')}.csv`;
             link.setAttribute("download", filename);
             
-            // 點擊連結觸發下載
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -626,7 +666,7 @@
             if (storedExpenses) {
                 // 由於新增了 card_used 欄位，這裡需要處理舊資料，確保每個 expense 都有 card_used
                 let parsedExpenses = JSON.parse(storedExpenses);
-                // 填充舊資料的 card_used 欄位，預設為 '未知' 或 '現金'
+                // 填充舊資料的 card_used 欄位，預設為 '現金'
                 expenses = parsedExpenses.map(exp => ({
                     ...exp,
                     card_used: exp.card_used || (exp.twd_amount > 0 ? '現金' : '')
@@ -665,5 +705,3 @@
     </script>
 </body>
 </html>
-
-
