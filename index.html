@@ -281,17 +281,16 @@
 
         // 卡別選項定義 (集中管理)
         const cardOptions = [
-            { value: "聯邦吉鶴卡", text: "聯邦吉鶴卡 (JCB)" },
-            { value: "永豐幣倍卡", text: "永豐幣倍卡 (Master)" },
-            { value: "永豐大戶卡", text: "永豐大戶卡 (VISA)" },
-            { value: "永豐debit卡", text: "永豐debit卡 (Master)" },
-            { value: "玉山熊本熊卡", text: "玉山熊本熊卡 (JCB)" },
-            { value: "國泰CUBE卡", text: "國泰CUBE卡 (Master)" },
+            { value: "聯邦吉鶴卡", text: "聯邦吉鶴卡 (2萬円)" },
+            { value: "永豐幣倍卡", text: "永豐幣倍卡 (10萬円)" },
+            { value: "永豐大戶卡", text: "永豐大戶卡 (8.2萬円)" },
+            { value: "玉山熊本熊卡", text: "玉山熊本熊卡 (14.1萬円)" },
+            { value: "國泰CUBE卡", text: "國泰CUBE卡 (大丸百貨無上限)" },
         ];
         
         // --- 核心功能：初始化卡別選單 ---
         function initCardSelects() {
-            const defaultOption = '<option value="">-- 卡別 / 發卡組織 --</option>';
+            const defaultOption = '<option value="">-- 卡別 / 最佳上限 --</option>';
             const optionsHtml = cardOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
             
             twdCardSelect.innerHTML = defaultOption + optionsHtml;
