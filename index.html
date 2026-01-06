@@ -45,6 +45,17 @@
             margin-top: 5px; /* 台幣輸入框與日幣輸入框的間距 */
         }
 
+        /* 新增卡別選單樣式 */
+        #twd-card-select {
+            width: 100%; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            border: 2px solid #ccc; 
+            border-radius: 8px; 
+            font-size: 1.2em; 
+            box-sizing: border-box;
+        }
+
         #jpy-input::placeholder, #twd-input::placeholder {
             color: #aaa;
         }
@@ -156,6 +167,21 @@
             color: #008080; /* 深藍綠色文字 */
         }
 
+        /* 卡別加總區塊的樣式 */
+        .card-summary-block {
+            padding: 5px 10px; 
+            background: #f0f8ff; 
+            border-radius: 4px; 
+            margin-bottom: 5px;
+        }
+
+        .card-summary-item {
+            font-size: 0.95em; 
+            color: #444; 
+            display: flex; 
+            justify-content: space-between;
+        }
+
         .expense-list {
             list-style: none;
             padding: 0;
@@ -178,6 +204,14 @@
             flex-grow: 1;
             padding-right: 10px;
             color: #555;
+        }
+        
+        /* 台幣清單中顯示卡別的樣式 */
+        .card-name-in-list {
+            font-size: 0.8em; 
+            color: #888;
+            margin-left: 8px; 
+            font-style: italic;
         }
 
         /* 金額顯示樣式 */
@@ -250,13 +284,23 @@
     <div id="input-area">
         <input type="text" id="jpy-input" placeholder="日幣金額: 1500 晚餐" autofocus>
         <input type="text" id="twd-input" placeholder="台幣金額: 3200 唐吉訶德" style="margin-top: 10px;">
+        
+        <select id="twd-card-select">
+            <option value="">-- 請選擇卡別 / 付款方式 --</option>
+            <option value="現金">現金 (NT$)</option>
+            <option value="A卡">A卡 (主卡)</option>
+            <option value="B卡">B卡 (副卡)</option>
+            <option value="C卡">C卡 (行動支付)</option>
+            <option value="其他">其他</option>
+        </select>
+
         <button onclick="addExpense()">+ 記錄這筆支出</button>
     </div>
 
     <div id="history-area">
         <div id="history-header">
             <h2>🧾 支出歷史記錄</h2>
-            <button id="export-btn" onclick="exportToCsv()">匯出 Excel</button>
+            <button id="export-btn" onclick="exportToCsv()">匯出 Excel (CSV)</button>
         </div>
         
         <h3 style="color: #d32f2f;">日幣支出 (¥)</h3>
@@ -271,9 +315,10 @@
     </div>
 
     <script>
-        const STORAGE_KEY = '2026japan_trip_0330_0410'; 
+        const STORAGE_KEY = 'japan_trip'; // 您指定的新鑰匙
         const jpyInput = document.getElementById('jpy-input'); 
         const twdInput = document.getElementById('twd-input'); 
+        const twdCardSelect = document.getElementById('twd-card-select'); // *** 新增變數：卡別選單 ***
         
         // 新增兩個分開的容器
         const jpyExpenseListContainer = document.getElementById('jpy-expense-list-container');
@@ -335,6 +380,7 @@
             let amount = 0;
             let description = '';
             let isJpy = false;
+            let cardUsed = ''; // *** 新增變數：卡別 ***
 
             if (jpyInputText) {
                 // 處理日幣輸入
@@ -349,6 +395,13 @@
 
             } else if (twdInputText) {
                 // 處理台幣輸入
+                cardUsed = twdCardSelect.value; // *** 獲取卡片名稱 ***
+                
+                if (!cardUsed) {
+                    alert('請選擇付款卡別或方式！');
+                    return;
+                }
+                
                 const result = parseExpenseInput(twdInputText, '台幣');
                 if (result.error) {
                     alert(result.error);
@@ -358,14 +411,15 @@
                 description = result.description;
                 isJpy = false;
             }
-
-            // 3. 創建新的支出記錄 (只會記錄其中一個幣別，另一個為 0)
+            
+            // 3. 創建新的支出記錄 
             const newExpense = {
                 id: Date.now(),
                 jpy_amount: isJpy ? amount : 0,
                 twd_amount: isJpy ? 0 : amount,
                 description: description, 
-                date: getTodayDateString()
+                date: getTodayDateString(),
+                card_used: cardUsed // *** 記錄卡別 ***
             };
 
             expenses.unshift(newExpense);
@@ -373,6 +427,7 @@
 
             jpyInput.value = '';
             twdInput.value = '';
+            twdCardSelect.value = ''; // 清空卡別選單
             jpyInput.focus(); 
         }
 
@@ -390,7 +445,7 @@
             }
         }
         
-        // --- 核心功能：匯出數據為 CSV 格式 ---
+        // --- 核心功能：匯出數據為 CSV 格式 (新增 Card 欄位) ---
         function exportToCsv() {
             if (expenses.length === 0) {
                 alert('沒有任何支出記錄可以匯出！');
@@ -399,17 +454,18 @@
 
             // CSV 標頭
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF 是 BOM，確保 Excel 正確顯示中文
-            csvContent += "日期,說明,日幣金額(¥),台幣金額(NT$)\n"; 
+            csvContent += "日期,說明,日幣金額(¥),台幣金額(NT$),付款卡別\n"; // *** 新增欄位 ***
 
             // 數據行
             expenses.forEach(expense => {
                 // 將所有逗號替換為分號，防止 CSV 欄位混亂
                 const descriptionSafe = expense.description.replace(/,/g, ';'); 
                 
-                const jpy = expense.jpy_amount.toFixed(0); // 日幣不保留小數
-                const twd = expense.twd_amount.toFixed(0); // 台幣不保留小數
+                const jpy = expense.jpy_amount.toFixed(0); 
+                const twd = expense.twd_amount.toFixed(0); 
+                const card = expense.card_used || ''; // 處理日幣沒有卡別的情況
                 
-                csvContent += `${expense.date},${descriptionSafe},${jpy},${twd}\n`;
+                csvContent += `${expense.date},${descriptionSafe},${jpy},${twd},${card}\n`; // *** 匯出卡別 ***
             });
 
             // 創建連結並下載文件
@@ -434,19 +490,19 @@
             calculateTotal();
         }
 
-        // --- 畫面更新：計算總額 (已修正台幣為無小數點) ---
+        // --- 畫面更新：計算總額 ---
         function calculateTotal() {
             const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
             const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
 
-            // 日幣總合計 (維持無小數點)
+            // 日幣總合計 (無小數點)
             totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
             
-            // 台幣總合計 (修正為無小數點)
+            // 台幣總合計 (無小數點)
             totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
         
-        // --- 畫面更新：渲染列表 (分開處理 JPY 和 TWD) ---
+        // --- 畫面更新：渲染列表 (重要：新增卡別分組合計) ---
         function renderExpenses() {
             // 清空兩個容器
             jpyExpenseListContainer.innerHTML = '';
@@ -471,7 +527,6 @@
                 
                 const currencySymbol = isJPY ? '¥' : 'NT$';
                 const currencyLocale = isJPY ? 'ja-JP' : 'zh-TW';
-                // 統一設置：日幣無小數，台幣也無小數
                 const fractionDigits = 0; 
                 const amountKey = isJPY ? 'jpy_amount' : 'twd_amount';
 
@@ -493,9 +548,8 @@
                 sortedDates.forEach(date => {
                     const dailyExpenses = groupedExpenses[date];
 
-                    // 計算當日總支出
+                    // **[當日總支出計算]**
                     const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense[amountKey], 0);
-                    // 確保日總計也無小數點
                     const dailyTotalFormatted = dailyTotal.toLocaleString(currencyLocale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
 
                     // 日期分組標題
@@ -504,18 +558,51 @@
                             <span>${date}</span> 
                             <span>合計: ${currencySymbol} ${dailyTotalFormatted}</span>
                         </div>
-                        <ul class="expense-list">
                     `;
+
+                    // **[卡別總計區 (僅限 TWD)]**
+                    if (!isJPY) {
+                        const cardTotals = dailyExpenses.reduce((totals, expense) => {
+                            const card = expense.card_used || '現金'; // 若無卡別，預設為現金
+                            if (!totals[card]) {
+                                totals[card] = 0;
+                            }
+                            // 這裡必須檢查 twd_amount 是否存在 (用於處理舊資料)，儘管 logic 已確保 twd_amount > 0
+                            totals[card] += expense.twd_amount || 0; 
+                            return totals;
+                        }, {});
+
+                        htmlContent += '<div class="card-summary-block">';
+                        
+                        // 確保卡別名稱按照字母順序排序，讓顯示順序固定
+                        Object.keys(cardTotals).sort().forEach(card => {
+                            const cardAmountFormatted = cardTotals[card].toLocaleString(currencyLocale, { maximumFractionDigits: fractionDigits });
+                            htmlContent += `
+                                <div class="card-summary-item">
+                                    <span>${card} 總計:</span>
+                                    <span style="font-weight: bold;">${currencySymbol} ${cardAmountFormatted}</span>
+                                </div>
+                            `;
+                        });
+                        htmlContent += '</div>';
+                    }
+
+                    // 創建支出列表
+                    htmlContent += `<ul class="expense-list">`;
 
                     // 清單項目
                     dailyExpenses.forEach(expense => {
                         const itemAmount = expense[amountKey];
-                        // 確保單筆金額也無小數點
                         const itemAmountFormatted = itemAmount.toLocaleString(currencyLocale, { maximumFractionDigits: fractionDigits });
                         
+                        // 針對台幣支出，在品項後加入卡別
+                        const descriptionWithCard = isJPY 
+                            ? expense.description 
+                            : `${expense.description} <span class="card-name-in-list">(${expense.card_used || '現金'})</span>`;
+
                         htmlContent += `
                             <li>
-                                <span class="item-description">${expense.description}</span>
+                                <span class="item-description">${descriptionWithCard}</span>
                                 <span class="item-amount">${currencySymbol} ${itemAmountFormatted}</span>
                                 <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
                             </li>
@@ -537,7 +624,13 @@
         function init() {
             const storedExpenses = localStorage.getItem(STORAGE_KEY);
             if (storedExpenses) {
-                expenses = JSON.parse(storedExpenses);
+                // 由於新增了 card_used 欄位，這裡需要處理舊資料，確保每個 expense 都有 card_used
+                let parsedExpenses = JSON.parse(storedExpenses);
+                // 填充舊資料的 card_used 欄位，預設為 '未知' 或 '現金'
+                expenses = parsedExpenses.map(exp => ({
+                    ...exp,
+                    card_used: exp.card_used || (exp.twd_amount > 0 ? '現金' : '')
+                }));
             }
             renderExpenses();
             calculateTotal();
@@ -550,6 +643,19 @@
             });
             twdInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
+                    // 如果輸入台幣，檢查卡別選單是否開啟
+                    if (twdCardSelect.value) {
+                       addExpense();
+                    } else {
+                       // 僅移動焦點到選單
+                       twdCardSelect.focus();
+                       event.preventDefault(); // 阻止 Enter 觸發表單提交
+                    }
+                }
+            });
+            // 允許在下拉選單按下 Enter 鍵時提交
+             twdCardSelect.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
                     addExpense();
                 }
             });
@@ -559,7 +665,3 @@
     </script>
 </body>
 </html>
-
-
-
-
