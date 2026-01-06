@@ -220,11 +220,11 @@
 
     <div id="input-area">
         
-        <h3>📝 新增支出記錄 (自動判斷 現金/卡刷)</h3>
+        <h3>📝 日幣/台幣支出</h3>
         
-        <input type="text" id="jpy-amount-input" placeholder="日幣金額: 1500 交通費" autofocus>
+        <input type="text" id="jpy-amount-input" placeholder="日幣金額: 500 公車" autofocus>
         
-        <input type="text" id="twd-card-input" placeholder="台幣入帳/實際支出金額 (選填): 1080">
+        <input type="text" id="twd-card-input" placeholder="台幣金額 (選填): 1080">
         
         <select id="twd-card-select">
             </select>
@@ -268,13 +268,11 @@
             { value: "永豐幣倍卡", text: "永豐幣倍卡 (ApplePay)" },
             { value: "玉山熊本熊卡", text: "玉山熊本熊卡 (paypay)" },
             { value: "國泰CUBE卡", text: "國泰CUBE卡 (ApplePay)" },
-            { value: "其他", text: "其他" },
-            { value: "現金 (台幣)", text: "現金 (台幣)" }, // 用於記錄純台幣消費
         ];
         
         // --- 核心功能：初始化卡別選單 ---
         function initCardSelects() {
-            const defaultOption = '<option value="">-- 卡別 / 付款方式 (卡刷模式必選) --</option>';
+            const defaultOption = '<option value="">-- 卡別 / 付款方式 --</option>';
             const optionsHtml = cardOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
             
             twdCardSelect.innerHTML = defaultOption + optionsHtml;
@@ -661,3 +659,4 @@
     </script>
 </body>
 </html>
+
