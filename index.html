@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本旅遊快速記帳</title>
+    <title>日本旅遊快速記帳 (對齊修正版)</title>
     <style>
         /* 基礎樣式 (保留大部分) */
         body {
@@ -147,15 +147,36 @@
             border-radius: 6px;
             margin-bottom: 15px;
         }
+
+        /* 修正重點：使用 CSS Grid 或 Flexbox 優化對齊 */
         .card-summary-item {
-            display: flex;
-            justify-content: space-between;
+            display: grid; /* 使用 Grid 佈局 */
+            /* 三欄佈局：卡別(自動佔滿剩餘空間) | 日幣金額(固定寬度) | 台幣金額(固定寬度) */
+            grid-template-columns: 1fr 100px 100px; 
+            gap: 10px; /* 欄位間距 */
             padding: 4px 0;
             border-bottom: 1px dotted #a3a3a3;
+            align-items: center;
         }
         .card-summary-item:last-child {
              border-bottom: none;
         }
+
+        .summary-card-name {
+            /* 讓卡別名稱靠左對齊 */
+            text-align: left; 
+        }
+        .summary-amount {
+            /* 讓金額靠右對齊 */
+            text-align: right; 
+            white-space: nowrap; /* 防止金額換行 */
+        }
+        /* 讓總計列的字體也遵循對齊 */
+        .card-summary-item[style*="font-weight: bold;"] {
+            grid-template-columns: 1fr 100px 100px;
+        }
+
+        /* 列表樣式 (保留) */
         .expense-list {
             list-style: none;
             padding: 0;
@@ -487,9 +508,9 @@
 
                 html += `
                     <div class="card-summary-item">
-                        <span>${card}:</span>
-                        <span style="color: #d32f2f;">¥ ${jpyFormatted}</span>
-                        <span style="color: #008080;">NT$ ${twdFormatted}</span>
+                        <span class="summary-card-name">${card}:</span>
+                        <span class="summary-amount" style="color: #d32f2f;">¥ ${jpyFormatted}</span>
+                        <span class="summary-amount" style="color: #008080;">NT$ ${twdFormatted}</span>
                     </div>
                 `;
             });
@@ -497,9 +518,9 @@
             // 顯示刷卡總計
             html += `
                 <div class="card-summary-item" style="font-weight: bold; margin-top: 5px; border-top: 2px solid #bbdefb; padding-top: 5px;">
-                    <span>刷卡總支出:</span>
-                    <span style="color: #d32f2f;">¥ ${totalJpyForCard.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
-                    <span style="color: #008080;">NT$ ${totalTwdForCard.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}</span>
+                    <span class="summary-card-name">刷卡總支出:</span>
+                    <span class="summary-amount" style="color: #d32f2f;">¥ ${totalJpyForCard.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
+                    <span class="summary-amount" style="color: #008080;">NT$ ${totalTwdForCard.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}</span>
                 </div>
             `;
             
@@ -659,11 +680,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
