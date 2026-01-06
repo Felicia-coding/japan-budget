@@ -327,7 +327,7 @@
                 type = 'CARD_JPY';
                 
                 if (!jpyText || !cardUsed) {
-                    return alert('當您輸入台幣金額時，日幣金額和卡別都是必填的！');
+                    return alert('請輸入日幣金額和卡別！');
                 }
 
                 const jpyResult = parseExpenseInput(jpyText, '日幣刷卡');
@@ -659,4 +659,5 @@
     </script>
 </body>
 </html>
+
 
