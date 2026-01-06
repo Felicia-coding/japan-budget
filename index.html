@@ -291,7 +291,6 @@
             <option value="永豐幣倍卡">永豐幣倍卡 (ApplePay)</option>
             <option value="玉山熊本熊卡">玉山熊本熊卡 (paypay)</option>
             <option value="國泰CUBE卡">國泰CUBE卡 (ApplePay)</option>
-            <option value="其他">其他</option>
         </select>
 
         <button onclick="addExpense()">+ 記錄這筆支出</button>
@@ -457,7 +456,7 @@
             }, {});
         }
 
-        // --- 核心功能：匯出數據為 CSV 格式 (**已修改**) ---
+        // --- 核心功能：匯出數據為 CSV 格式 (已修改，加入卡別總結區) ---
         function exportToCsv() {
             if (expenses.length === 0) {
                 alert('沒有任何支出記錄可以匯出！');
@@ -467,7 +466,7 @@
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
             
             // ==========================================================
-            // 1. 匯出支出記錄清單
+            // 1. 匯出支出記錄清單 (明細)
             // ==========================================================
 
             csvContent += "日期,說明,日幣金額(¥),台幣金額(NT$),付款卡別\n"; 
@@ -484,7 +483,7 @@
             });
 
             // ==========================================================
-            // 2. 新增卡別總計區塊 (TWD)
+            // 2. 新增卡別總計區塊 (TWD) - 模擬合併儲存格
             // ==========================================================
             
             const cardTotals = calculateTwdCardTotals();
@@ -493,8 +492,9 @@
             // 兩行空白，作為分隔
             csvContent += "\n\n"; 
             
-            // 標題
-            csvContent += "台幣卡別總結 (NT$)\n"; 
+            // 標題行：增加逗號，讓 Excel 視為佔用兩個欄位
+            csvContent += "台幣卡別總結 (NT$),,\n"; 
+
             csvContent += "卡別,總金額(NT$)\n";
             
             // 數據行
@@ -664,7 +664,7 @@
         function init() {
             const storedExpenses = localStorage.getItem(STORAGE_KEY);
             if (storedExpenses) {
-                // 由於新增了 card_used 欄位，這裡需要處理舊資料，確保每個 expense 都有 card_used
+                // 處理舊資料，確保每個 expense 都有 card_used
                 let parsedExpenses = JSON.parse(storedExpenses);
                 // 填充舊資料的 card_used 欄位，預設為 '現金'
                 expenses = parsedExpenses.map(exp => ({
