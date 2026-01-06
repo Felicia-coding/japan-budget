@@ -79,7 +79,7 @@
             border-top: 1px solid #eee;
         }
 
-        /* 總金額顯示區 (恢復原始簡潔樣式) */
+        /* 總金額顯示區 */
         #summary-area {
             text-align: center;
             margin-bottom: 20px;
@@ -164,12 +164,23 @@
             color: #ff9800; 
         }
         
-        /* 卡別加總區塊的樣式 */
-        .card-summary-block {
-            padding: 5px 10px; 
-            background: #f0f8ff; 
-            border-radius: 4px; 
-            margin-bottom: 5px;
+        /* 卡別加總區塊的樣式 (針對 CARD_JPY 列表頂部新增) */
+        .card-total-summary {
+            padding: 10px;
+            background: #e3f2fd; /* 淺藍色背景，區別於日分組 */
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .card-summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dotted #a3a3a3;
+        }
+        .card-summary-item:last-child {
+             border-bottom: none;
         }
         
         /* 清單通用樣式 */
@@ -419,7 +430,7 @@
             }
         }
         
-        // --- 輔助函數：計算總額 (核心修改點) ---
+        // --- 輔助函數：計算總額 (保持不變) ---
         function calculateTotal() {
             // 1. 日幣總支出合計 (所有 JPY 金額相加)
             const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
@@ -432,22 +443,24 @@
             totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
         
-        // --- 輔助函數：計算台幣卡別總計 ---
-        function calculateTwdCardTotals() {
-            // 只計算 CARD_JPY 模式的 TWD 總額
-            const twdExpenses = expenses.filter(e => e.type === 'CARD_JPY' && e.twd_amount > 0);
-            return twdExpenses.reduce((totals, expense) => {
+        // --- 【新增/修改】輔助函數：計算卡別總計 (JPY 和 TWD) ---
+        function calculateCardTotals() {
+            // 只計算 CARD_JPY 模式的支出
+            const cardExpenses = expenses.filter(e => e.type === 'CARD_JPY');
+            
+            return cardExpenses.reduce((totals, expense) => {
                 const card = expense.card_used || '未知卡別';
                 if (!totals[card]) {
-                    totals[card] = 0;
+                    totals[card] = { jpy: 0, twd: 0 };
                 }
-                totals[card] += expense.twd_amount || 0;
+                totals[card].jpy += expense.jpy_amount || 0;
+                totals[card].twd += expense.twd_amount || 0;
                 return totals;
             }, {});
         }
 
 
-        // --- 核心功能：匯出數據為 CSV 格式 (沿用上一個答案的明細模式) ---
+        // --- 核心功能：匯出數據為 CSV 格式 (保持不變) ---
         function exportToCsv() {
              if (expenses.length === 0) {
                 alert('沒有任何支出記錄可以匯出！');
@@ -470,21 +483,23 @@
                 csvContent += `${expense.date},${descriptionSafe},${typeName},${jpy},${twd},${card}\n`; 
             });
 
-            // 2. 新增卡別總計區塊 (TWD)
-            const cardTotals = calculateTwdCardTotals();
+            // 2. 新增卡別總計區塊 (JPY + TWD)
+            const cardTotals = calculateCardTotals();
             const totalTwdForCard = expenses.filter(e => e.type === 'CARD_JPY').reduce((sum, expense) => sum + expense.twd_amount, 0);
+            const totalJpyForCard = expenses.filter(e => e.type === 'CARD_JPY').reduce((sum, expense) => sum + expense.jpy_amount, 0);
+
 
             csvContent += "\n\n"; 
-            csvContent += "台幣卡別總結 (NT$)\n"; 
-
-            csvContent += "卡別,總金額(NT$)\n";
+            csvContent += "日幣卡刷總結\n"; 
+            csvContent += "卡別,日幣總金額(¥),台幣總金額(NT$)\n";
             
             Object.keys(cardTotals).sort().forEach(card => {
-                const cardAmount = cardTotals[card].toFixed(0);
-                csvContent += `${card},${cardAmount}\n`;
+                const jpyAmount = cardTotals[card].jpy.toFixed(0);
+                const twdAmount = cardTotals[card].twd.toFixed(0);
+                csvContent += `${card},${jpyAmount},${twdAmount}\n`;
             });
 
-            csvContent += `總計(TWD),${totalTwdForCard.toFixed(0)}\n`;
+            csvContent += `總計,${totalJpyForCard.toFixed(0)},${totalTwdForCard.toFixed(0)}\n`;
 
 
             // 3. 執行下載
@@ -500,7 +515,7 @@
             document.body.removeChild(link);
         }
         
-        // --- 畫面更新：渲染列表 (沿用上一個答案的清單分組邏輯) ---
+        // --- 畫面更新：渲染列表 (主要修改點在這裡) ---
         function renderExpenses() {
             jpyCashListContainer.innerHTML = '';
             jpyCardListContainer.innerHTML = '';
@@ -521,103 +536,124 @@
 
             // 3. 渲染 JPY 卡刷/所有台幣
             jpyCardListContainer.innerHTML += `<h4>💳 日幣卡刷支出 (¥/NT$)</h4>`;
+            
+            // **【重要新增】**：在卡刷列表頂部顯示卡別總計
+            if (jpyCardList.length > 0) {
+                jpyCardListContainer.innerHTML += renderCardTotalsSummary(calculateCardTotals());
+            }
+            
             renderList(jpyCardListContainer, jpyCardList, 'CARD_JPY');
             
+        }
 
-            // --- 輔助函數：渲染單一分組列表 ---
-            function renderList(container, list, listType) {
-                if (list.length === 0) {
-                    container.innerHTML += '<p style="text-align: center; color: #999;">目前沒有記錄。</p>';
-                    return;
-                }
+        // --- 【新增】輔助函數：渲染卡別總計區塊 ---
+        function renderCardTotalsSummary(cardTotals) {
+            let html = '<div class="card-total-summary"><strong>各卡別總計 (旅行總和)</strong><br>';
+            
+            const totalJpyForCard = Object.values(cardTotals).reduce((sum, item) => sum + item.jpy, 0);
+            const totalTwdForCard = Object.values(cardTotals).reduce((sum, item) => sum + item.twd, 0);
+
+            // 顯示每張卡的 JPY 和 TWD 總額
+            Object.keys(cardTotals).sort().forEach(card => {
+                const totals = cardTotals[card];
+                const jpyFormatted = totals.jpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+                const twdFormatted = totals.twd.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
+
+                html += `
+                    <div class="card-summary-item">
+                        <span>${card}:</span>
+                        <span style="color: #d32f2f;">¥ ${jpyFormatted}</span>
+                        <span style="color: #008080;">NT$ ${twdFormatted}</span>
+                    </div>
+                `;
+            });
+            
+            // 顯示卡刷總計
+            html += `
+                <div class="card-summary-item" style="font-weight: bold; margin-top: 5px; border-top: 2px solid #bbdefb; padding-top: 5px;">
+                    <span>卡刷總支出:</span>
+                    <span style="color: #d32f2f;">¥ ${totalJpyForCard.toLocaleString('ja-JP', { maximumFractionDigits: 0 })}</span>
+                    <span style="color: #008080;">NT$ ${totalTwdForCard.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}</span>
+                </div>
+            `;
+            
+            html += '</div>';
+            return html;
+        }
+
+        // --- 輔助函數：渲染單一分組列表 (調整了卡別總計的邏輯) ---
+        function renderList(container, list, listType) {
+            if (list.length === 0) {
+                // 不需重複顯示 '目前沒有記錄'，因為總標題已經處理
+                return;
+            }
+            
+            const currencyLocale = 'ja-JP'; 
+            const amountKey = 'jpy_amount'; 
+
+            const groupedExpenses = list.reduce((groups, expense) => {
+                const date = expense.date;
+                if (!groups[date]) groups[date] = [];
+                groups[date].push(expense);
+                return groups;
+            }, {});
+
+            const sortedDates = Object.keys(groupedExpenses).sort().reverse();
+            let htmlContent = '';
+
+            sortedDates.forEach(date => {
+                const dailyExpenses = groupedExpenses[date];
+
+                // **[當日總支出計算]** (Primary 幣別 - JPY)
+                const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense[amountKey], 0);
+                const dailyTotalFormatted = dailyTotal.toLocaleString(currencyLocale, { maximumFractionDigits: 0 });
+
+                // 日期分組標題
+                htmlContent += `
+                    <div class="date-group">
+                        <span>${date}</span> 
+                        <span>合計: ¥ ${dailyTotalFormatted}</span>
+                    </div>
+                `;
                 
-                const currencyLocale = 'ja-JP'; 
-                const amountKey = 'jpy_amount'; 
+                // **【移除】**：移除原有的每日卡別 TWD 總計區塊，因為整體卡別總計已移到最頂部。
+                // if (listType === 'CARD_JPY') { ... }
 
-                const groupedExpenses = list.reduce((groups, expense) => {
-                    const date = expense.date;
-                    if (!groups[date]) groups[date] = [];
-                    groups[date].push(expense);
-                    return groups;
-                }, {});
 
-                const sortedDates = Object.keys(groupedExpenses).sort().reverse();
-                let htmlContent = '';
+                // 創建支出列表
+                htmlContent += `<ul class="expense-list">`;
 
-                sortedDates.forEach(date => {
-                    const dailyExpenses = groupedExpenses[date];
-
-                    // **[當日總支出計算]** (Primary 幣別 - JPY)
-                    const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense[amountKey], 0);
-                    const dailyTotalFormatted = dailyTotal.toLocaleString(currencyLocale, { maximumFractionDigits: 0 });
-
-                    // 日期分組標題
-                    htmlContent += `
-                        <div class="date-group">
-                            <span>${date}</span> 
-                            <span>合計: ¥ ${dailyTotalFormatted}</span>
-                        </div>
-                    `;
+                dailyExpenses.forEach(expense => {
+                    const primaryAmount = expense[amountKey].toLocaleString(currencyLocale, { maximumFractionDigits: 0 });
                     
-                    // **[卡別總計區 (僅限 CARD_JPY 的 TWD)]**
+                    let descriptionHtml = expense.description;
+                    let amountDisplay = `¥ ${primaryAmount}`;
+                    
+                    // 處理 CARD_JPY (要顯示 JPY/TWD/卡別)
                     if (listType === 'CARD_JPY') {
-                        const cardTotals = dailyExpenses.reduce((totals, expense) => {
-                            const card = expense.card_used || '未知卡別';
-                            const twdAmount = expense.twd_amount || 0;
-                            if (!totals[card]) totals[card] = 0;
-                            totals[card] += twdAmount; 
-                            return totals;
-                        }, {});
-
-                        htmlContent += '<div class="card-summary-block">';
-                        
-                        Object.keys(cardTotals).sort().forEach(card => {
-                            const cardAmountFormatted = cardTotals[card].toLocaleString('zh-TW', { maximumFractionDigits: 0 });
-                            htmlContent += `
-                                <div class="card-summary-item">
-                                    <span>${card} TWD 總計:</span>
-                                    <span style="font-weight: bold; color: #008080;">NT$ ${cardAmountFormatted}</span>
-                                </div>
-                            `;
-                        });
-                        htmlContent += '</div>';
+                        const secondaryAmount = expense.twd_amount.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
+                        descriptionHtml += ` <span class="twd-in-list"> (NT$ ${secondaryAmount})</span>`;
+                        descriptionHtml += ` <span class="card-name-in-list">(${expense.card_used})</span>`;
+                    }
+                    // 處理 CASH_JPY
+                    else if (listType === 'CASH_JPY') {
+                        descriptionHtml += ` <span class="card-name-in-list">(現金)</span>`;
                     }
 
-                    // 創建支出列表
-                    htmlContent += `<ul class="expense-list">`;
 
-                    dailyExpenses.forEach(expense => {
-                        const primaryAmount = expense[amountKey].toLocaleString(currencyLocale, { maximumFractionDigits: 0 });
-                        
-                        let descriptionHtml = expense.description;
-                        let amountDisplay = `¥ ${primaryAmount}`;
-                        
-                        // 處理 CARD_JPY (要顯示 JPY/TWD/卡別)
-                        if (listType === 'CARD_JPY') {
-                            const secondaryAmount = expense.twd_amount.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
-                            descriptionHtml += ` <span class="twd-in-list"> (NT$ ${secondaryAmount})</span>`;
-                            descriptionHtml += ` <span class="card-name-in-list">(${expense.card_used})</span>`;
-                        }
-                        // 處理 CASH_JPY
-                        else if (listType === 'CASH_JPY') {
-                            descriptionHtml += ` <span class="card-name-in-list">(現金)</span>`;
-                        }
-
-
-                        htmlContent += `
-                            <li>
-                                <span class="item-description">${descriptionHtml}</span>
-                                <span class="item-amount">${amountDisplay}</span>
-                                <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
-                            </li>
-                        `;
-                    });
-
-                    htmlContent += `</ul>`;
+                    htmlContent += `
+                        <li>
+                            <span class="item-description">${descriptionHtml}</span>
+                            <span class="item-amount">${amountDisplay}</span>
+                            <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
+                        </li>
+                    `;
                 });
-                
-                container.innerHTML += htmlContent;
-            }
+
+                htmlContent += `</ul>`;
+            });
+            
+            container.innerHTML += htmlContent;
         }
         
         // --- 數據處理：儲存和刷新 ---
