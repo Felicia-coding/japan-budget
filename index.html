@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本旅遊快速記帳</title>
+    <title>日本旅遊快速記帳 (日幣現金/卡刷分流版)</title>
     <style>
         /* 基礎樣式 */
         body {
@@ -14,9 +14,8 @@
             color: #333;
         }
 
-        /* 標題 */
         h1 {
-            color: #d32f2f; /* 類似日本國旗的紅色 */
+            color: #d32f2f; 
             text-align: center;
             margin-bottom: 30px;
         }
@@ -29,42 +28,36 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
+        
+        /* 輸入區塊分組標題 */
+        h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #444;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #ddd;
+        }
+        
+        h3:first-child {
+            margin-top: 0;
+        }
 
-        /* 輸入框樣式 */
-        #jpy-input, #twd-input {
+        /* 輸入框和選單樣式 */
+        input[type="text"], select {
             width: calc(100% - 22px);
             padding: 15px;
             margin-bottom: 10px;
             border: 2px solid #ccc;
             border-radius: 8px;
             font-size: 1.2em;
-            box-sizing: border-box; /* 確保 padding 不會增加整體寬度 */
-        }
-        
-        #twd-input {
-            margin-top: 5px; /* 台幣輸入框與日幣輸入框的間距 */
-        }
-
-        /* 新增卡別選單樣式 */
-        #twd-card-select {
-            width: 100%; 
-            padding: 15px; 
-            margin-bottom: 10px; 
-            border: 2px solid #ccc; 
-            border-radius: 8px; 
-            font-size: 1.2em; 
-            box-sizing: border-box;
-        }
-
-        #jpy-input::placeholder, #twd-input::placeholder {
-            color: #aaa;
+            box-sizing: border-box; 
         }
 
         /* 按鈕樣式 */
-        button {
+        button:not(#export-btn, .delete-btn) {
             width: 100%;
             padding: 15px;
-            background-color: #4CAF50; /* 綠色，表示確認 */
+            background-color: #4CAF50; 
             color: white;
             border: none;
             border-radius: 8px;
@@ -72,13 +65,21 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
             font-weight: bold;
+            margin-bottom: 10px;
         }
-
-        button:hover {
+        
+        button:hover:not(#export-btn, .delete-btn) {
             background-color: #45a049;
         }
+        
+        /* 區塊分隔線 */
+        hr {
+            margin: 20px 0;
+            border: 0;
+            border-top: 1px solid #eee;
+        }
 
-        /* 總金額顯示區 */
+        /* 總金額顯示區 (恢復原始簡潔樣式) */
         #summary-area {
             text-align: center;
             margin-bottom: 20px;
@@ -87,18 +88,21 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
+        
         /* 修正: 總額字體大小一致 */
         #total-jpy {
             font-size: 2.0em; 
             font-weight: bold;
             color: #d32f2f;
+            margin-bottom: 15px; /* 與 TWD 分隔 */
+            display: block;
         }
         
         #total-twd {
             font-size: 2.0em; 
             font-weight: bold;
-            color: #008080; /* 台幣用不同的顏色區分 */
+            color: #008080; 
+            display: block;
         }
         
         /* 調整說明文字的字體大小 */
@@ -106,41 +110,34 @@
             font-size: 1.1em; 
             margin: 5px 0 0 !important;
             color: #555;
-        }
-
-        /* 歷史記錄區 */
-        #history-area {
-            background: #fff;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: block;
         }
         
-        /* 歷史記錄區塊標題和按鈕的容器 */
+        /* 歷史記錄區塊標題 */
         #history-header {
-            display: flex; /* 啟用彈性佈局 */
-            justify-content: space-between; /* 標題靠左，按鈕靠右 */
-            align-items: center; /* 垂直居中 */
+            display: flex;
+            justify-content: space-between; 
+            align-items: center; 
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
             margin-top: 0;
-            margin-bottom: 10px; /* 增加間距 */
+            margin-bottom: 10px;
         }
-        
-        /* 區塊標題 */
-        h2 {
-            color: #333;
-            border-bottom: none; 
-            padding-bottom: 0;
-            margin-bottom: 0;
-            margin-top: 0;
-        }
-        
-        /* 次級標題 (日幣/台幣) */
-        h3 {
+
+        /* 列表分組標題 */
+        .expense-list-section h4 {
             margin-top: 25px;
             border-bottom: 1px solid #ccc;
             padding-bottom: 5px;
+            color: #333;
+        }
+
+        /* 日幣卡刷清單中 TWD 的樣式 */
+        .twd-in-list {
+            font-size: 0.9em;
+            color: #008080;
+            margin-left: 8px;
+            font-style: italic;
         }
 
         /* 日期分組標題樣式 */
@@ -155,18 +152,18 @@
             align-items: center;
         }
         
-        /* 日幣日期分組 */
-        #jpy-expense-list-container .date-group {
-            background-color: #fbe4e4; /* 淺紅色背景 */
-            color: #d32f2f; /* 深紅色文字 */
+        /* 日幣現金日期分組 */
+        #jpy-cash-list-container .date-group {
+            background-color: #fbe4e4; 
+            color: #d32f2f; 
         }
         
-        /* 台幣日期分組 */
-        #twd-expense-list-container .date-group {
-            background-color: #e0f7fa; /* 淺藍色背景 */
-            color: #008080; /* 深藍綠色文字 */
+        /* 日幣卡刷日期分組 */
+        #jpy-card-list-container .date-group {
+            background-color: #fff3e0; 
+            color: #ff9800; 
         }
-
+        
         /* 卡別加總區塊的樣式 */
         .card-summary-block {
             padding: 5px 10px; 
@@ -174,20 +171,13 @@
             border-radius: 4px; 
             margin-bottom: 5px;
         }
-
-        .card-summary-item {
-            font-size: 0.95em; 
-            color: #444; 
-            display: flex; 
-            justify-content: space-between;
-        }
-
+        
+        /* 清單通用樣式 */
         .expense-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-
         .expense-list li {
             padding: 12px 0;
             border-bottom: 1px dashed #eee;
@@ -196,41 +186,26 @@
             align-items: center;
             font-size: 1.1em;
         }
-        .expense-list li:last-child {
-            border-bottom: none;
-        }
-
+        
         .item-description {
             flex-grow: 1;
             padding-right: 10px;
             color: #555;
         }
         
-        /* 台幣清單中顯示卡別的樣式 */
         .card-name-in-list {
             font-size: 0.8em; 
             color: #888;
             margin-left: 8px; 
             font-style: italic;
         }
-
-        /* 金額顯示樣式 */
+        
         .item-amount {
             font-weight: bold;
-            white-space: nowrap; /* 防止金額換行 */
+            white-space: nowrap; 
+            color: #d32f2f; /* JPY 預設顏色 */
         }
         
-        /* 日幣清單中的金額顏色 */
-        #jpy-expense-list-container .item-amount {
-            color: #d32f2f;
-        }
-        
-        /* 台幣清單中的金額顏色 */
-        #twd-expense-list-container .item-amount {
-            color: #008080;
-        }
-
-
         .delete-btn {
             background: none;
             border: none;
@@ -240,31 +215,18 @@
             padding: 0 5px;
             margin-left: 10px;
             transition: color 0.2s;
-            width: auto; /* 覆蓋 button 的 100% 寬度 */
+            width: auto; 
         }
-
+        
         .delete-btn:hover {
             color: #d32f2f;
         }
-
-        /* 匯出按鈕的樣式 */
-        #export-btn {
-            width: auto; /* 覆蓋全寬設定 */
-            padding: 8px 15px;
-            background-color: #008CBA; /* 藍色，表示匯出/資訊 */
-            font-size: 0.9em;
-        }
-
-        #export-btn:hover {
-            background-color: #007bb5;
-        }
-
+        
         /* 清除按鈕 */
         #clear-btn {
             margin-top: 20px;
-            background-color: #9e9e9e; /* 灰色 */
+            background-color: #9e9e9e; 
         }
-
         #clear-btn:hover {
             background-color: #757575;
         }
@@ -282,18 +244,21 @@
     </div>
 
     <div id="input-area">
-        <input type="text" id="jpy-input" placeholder="日幣金額: 1500 晚餐" autofocus>
-        <input type="text" id="twd-input" placeholder="台幣金額: 3200 唐吉訶德" style="margin-top: 10px;">
         
-        <select id="twd-card-select">
-            <option value="">-- 請選擇卡別 / 付款方式 --</option>
-            <option value="聯邦吉鶴卡">聯邦吉鶴卡 (ApplePay)</option>
-            <option value="永豐幣倍卡">永豐幣倍卡 (ApplePay)</option>
-            <option value="玉山熊本熊卡">玉山熊本熊卡 (paypay)</option>
-            <option value="國泰CUBE卡">國泰CUBE卡 (ApplePay)</option>
-        </select>
+        <h3>💵 日幣現金支出 (僅填 JPY)</h3>
+        <input type="text" id="jpy-cash-input" placeholder="日幣金額: 1500 交通費" autofocus>
+        <button onclick="addExpense('CASH_JPY')">+ 記錄日幣現金</button>
 
-        <button onclick="addExpense()">+ 記錄這筆支出</button>
+        <hr>
+
+        <h3>💳 日幣卡刷支出 (JPY/NT$)</h3>
+        <input type="text" id="jpy-card-input" placeholder="日幣刷卡金額: 5000 藥妝 (記帳用)">
+        <input type="text" id="twd-card-input" placeholder="台幣入帳/實際支出金額: 1080">
+        
+        <select id="twd-card-select-jpy">
+            <option value="">-- 請選擇卡別 / 付款方式 --</option>
+            </select>
+        <button onclick="addExpense('CARD_JPY')">+ 記錄日幣卡刷/台幣支出</button>
     </div>
 
     <div id="history-area">
@@ -302,31 +267,50 @@
             <button id="export-btn" onclick="exportToCsv()">匯出 Excel</button>
         </div>
         
-        <h3 style="color: #d32f2f;">日幣支出 (¥)</h3>
-        <div id="jpy-expense-list-container">
-            </div>
+        <div id="jpy-cash-list-container" class="expense-list-section"></div>
         
-        <h3 style="color: #008080;">台幣支出 (NT$)</h3>
-        <div id="twd-expense-list-container">
-            </div>
+        <div id="jpy-card-list-container" class="expense-list-section"></div>
 
         <button id="clear-btn" onclick="clearAllData()">清空所有記錄</button>
     </div>
 
     <script>
         const STORAGE_KEY = 'japan_trip'; 
-        const jpyInput = document.getElementById('jpy-input'); 
-        const twdInput = document.getElementById('twd-input'); 
-        const twdCardSelect = document.getElementById('twd-card-select'); 
         
-        const jpyExpenseListContainer = document.getElementById('jpy-expense-list-container');
-        const twdExpenseListContainer = document.getElementById('twd-expense-list-container');
+        // 1. DOM 元素 - 輸入
+        const jpyCashInput = document.getElementById('jpy-cash-input');
+        const jpyCardInput = document.getElementById('jpy-card-input');
+        const twdCardInput = document.getElementById('twd-card-input');
+        const twdCardSelectJPY = document.getElementById('twd-card-select-jpy');
         
+        // 2. DOM 元素 - 顯示 (沿用原本的 ID)
         const totalJpyDisplay = document.getElementById('total-jpy'); 
         const totalTwdDisplay = document.getElementById('total-twd'); 
+        
+        const jpyCashListContainer = document.getElementById('jpy-cash-list-container');
+        const jpyCardListContainer = document.getElementById('jpy-card-list-container');
+        
         let expenses = [];
 
-        // --- 工具函數：格式化日期 ---
+        // 卡別選項定義 (集中管理)
+        const cardOptions = [
+            { value: "聯邦吉鶴卡", text: "聯邦吉鶴卡 (ApplePay)" },
+            { value: "永豐幣倍卡", text: "永豐幣倍卡 (ApplePay)" },
+            { value: "玉山熊本熊卡", text: "玉山熊本熊卡 (paypay)" },
+            { value: "國泰CUBE卡", text: "國泰CUBE卡 (ApplePay)" },
+            { value: "其他", text: "其他" },
+            { value: "現金 (台幣)", text: "現金 (台幣)" }, // 用於記錄純台幣消費
+        ];
+        
+        // --- 核心功能：初始化卡別選單 ---
+        function initCardSelects() {
+            const defaultOption = '<option value="">-- 請選擇卡別 / 付款方式 --</option>';
+            const optionsHtml = cardOptions.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+            
+            twdCardSelectJPY.innerHTML = defaultOption + optionsHtml;
+        }
+
+        // --- 工具函數：格式化日期 / 解析輸入 ---
         function formatDate(date) {
             const d = new Date(date);
             const year = d.getFullYear();
@@ -335,12 +319,10 @@
             return `${year}/${month}/${day}`;
         }
 
-        // --- 工具函數：獲取今天的日期字符串 ---
         function getTodayDateString() {
             return formatDate(new Date());
         }
 
-        // --- 核心解析函數：解析 [金額 品項] 格式 ---
         function parseExpenseInput(inputText, currency) {
             const match = inputText.match(/^(\d+[\d\.]*)\s*(.*)/);
             let amount = 0;
@@ -358,84 +340,78 @@
             return { amount, description: description.trim() };
         }
 
-        // --- 核心功能：新增支出 (單筆提交) ---
-        function addExpense() {
-            const jpyInputText = jpyInput.value.trim();
-            const twdInputText = twdInput.value.trim(); 
-
-            // 1. 檢查是否同時輸入兩個欄位
-            if (jpyInputText && twdInputText) {
-                alert('請分開記錄！您不能同時在日幣和台幣欄位輸入資料。請清空其中一個欄位後再提交。');
-                return;
-            }
-
-            // 2. 檢查是否都沒有輸入
-            if (!jpyInputText && !twdInputText) {
-                alert('請至少輸入日幣或台幣其中一筆記錄！');
-                return;
-            }
-            
-            let amount = 0;
+        // --- 核心功能：新增支出 (兩種模式) ---
+        function addExpense(type) {
+            let amountJPY = 0;
+            let amountTWD = 0;
             let description = '';
-            let isJpy = false;
             let cardUsed = ''; 
+            let success = false;
 
-            if (jpyInputText) {
-                // 處理日幣輸入
-                const result = parseExpenseInput(jpyInputText, '日幣');
-                if (result.error) {
-                    alert(result.error);
-                    return;
-                }
-                amount = result.amount;
+            if (type === 'CASH_JPY') {
+                // 模式 1: 日幣現金 (僅 JPY)
+                const inputText = jpyCashInput.value.trim();
+                if (!inputText) return alert('請輸入日幣現金金額！');
+                
+                const result = parseExpenseInput(inputText, '日幣現金');
+                if (result.error) return alert(result.error);
+                
+                amountJPY = result.amount;
                 description = result.description;
-                isJpy = true;
+                cardUsed = '日幣現金'; // 標記為現金
+                success = true;
+                jpyCashInput.value = '';
+                
+            } else if (type === 'CARD_JPY') {
+                // 模式 2: 日幣卡刷/所有台幣 (JPY, TWD, 卡別 必填)
+                const jpyText = jpyCardInput.value.trim();
+                const twdText = twdCardInput.value.trim();
+                cardUsed = twdCardSelectJPY.value;
 
-            } else if (twdInputText) {
-                // 處理台幣輸入
-                cardUsed = twdCardSelect.value; 
-                
-                if (!cardUsed) {
-                    alert('請選擇付款卡別或方式！');
-                    return;
+                if (!jpyText || !twdText || !cardUsed) {
+                    return alert('日幣卡刷支出：日幣金額、台幣金額、卡別都必須填寫！');
                 }
-                
-                const result = parseExpenseInput(twdInputText, '台幣');
-                if (result.error) {
-                    alert(result.error);
-                    return;
+
+                const jpyResult = parseExpenseInput(jpyText, '日幣刷卡');
+                const twdResult = parseExpenseInput(twdText, '台幣入帳');
+
+                if (jpyResult.error || twdResult.error) {
+                    return alert(jpyResult.error || twdResult.error);
                 }
-                amount = result.amount;
-                description = result.description;
-                isJpy = false;
+
+                amountJPY = jpyResult.amount;
+                amountTWD = twdResult.amount;
+                // 由於是卡刷，描述以 JPY 欄位為主
+                description = jpyResult.description; 
+                success = true;
+
+                jpyCardInput.value = '';
+                twdCardInput.value = '';
+                twdCardSelectJPY.value = '';
             }
-            
-            // 3. 創建新的支出記錄 
-            const newExpense = {
-                id: Date.now(),
-                jpy_amount: isJpy ? amount : 0,
-                twd_amount: isJpy ? 0 : amount,
-                description: description, 
-                date: getTodayDateString(),
-                card_used: cardUsed 
-            };
 
-            expenses.unshift(newExpense);
-            saveAndRefresh();
-
-            jpyInput.value = '';
-            twdInput.value = '';
-            twdCardSelect.value = ''; // 清空卡別選單
-            jpyInput.focus(); 
+            if (success) {
+                const newExpense = {
+                    id: Date.now(),
+                    jpy_amount: amountJPY,
+                    twd_amount: amountTWD,
+                    description: description, 
+                    date: getTodayDateString(),
+                    card_used: cardUsed,
+                    type: type 
+                };
+                expenses.unshift(newExpense);
+                saveAndRefresh();
+                jpyCashInput.focus(); 
+            }
         }
 
-        // --- 核心功能：刪除單筆支出 ---
+        // --- 核心功能：刪除單筆支出 / 清空所有數據 (保持不變) ---
         function deleteExpense(id) {
             expenses = expenses.filter(expense => expense.id !== id);
             saveAndRefresh();
         }
 
-        // --- 核心功能：清空所有數據 ---
         function clearAllData() {
             if (confirm('確定要清空所有記帳記錄嗎？這個操作無法復原。')) {
                 expenses = [];
@@ -443,11 +419,25 @@
             }
         }
         
+        // --- 輔助函數：計算總額 (核心修改點) ---
+        function calculateTotal() {
+            // 1. 日幣總支出合計 (所有 JPY 金額相加)
+            const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
+            
+            // 2. 台幣總支出合計 (所有 TWD 金額相加)
+            const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
+
+            // 格式化並更新顯示
+            totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+            totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+        
         // --- 輔助函數：計算台幣卡別總計 ---
         function calculateTwdCardTotals() {
-            const twdExpenses = expenses.filter(e => e.twd_amount > 0);
+            // 只計算 CARD_JPY 模式的 TWD 總額
+            const twdExpenses = expenses.filter(e => e.type === 'CARD_JPY' && e.twd_amount > 0);
             return twdExpenses.reduce((totals, expense) => {
-                const card = expense.card_used || '現金';
+                const card = expense.card_used || '未知卡別';
                 if (!totals[card]) {
                     totals[card] = 0;
                 }
@@ -456,60 +446,48 @@
             }, {});
         }
 
-        // --- 核心功能：匯出數據為 CSV 格式 (**已修改**) ---
+
+        // --- 核心功能：匯出數據為 CSV 格式 (沿用上一個答案的明細模式) ---
         function exportToCsv() {
-            if (expenses.length === 0) {
+             if (expenses.length === 0) {
                 alert('沒有任何支出記錄可以匯出！');
                 return;
             }
 
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
             
-            // ==========================================================
-            // 1. 匯出支出記錄清單
-            // ==========================================================
-
-            csvContent += "日期,說明,日幣金額(¥),台幣金額(NT$),付款卡別\n"; 
+            // 1. 匯出支出記錄清單 (明細)
+            csvContent += "日期,說明,類型,日幣金額(¥),台幣金額(NT$),付款卡別\n"; 
 
             expenses.forEach(expense => {
-                // 將所有逗號替換為分號，防止 CSV 欄位混亂
                 const descriptionSafe = expense.description.replace(/,/g, ';'); 
-                
                 const jpy = expense.jpy_amount.toFixed(0); 
                 const twd = expense.twd_amount.toFixed(0); 
                 const card = expense.card_used || ''; 
                 
-                csvContent += `${expense.date},${descriptionSafe},${jpy},${twd},${card}\n`; 
+                let typeName = (expense.type === 'CASH_JPY') ? '日幣現金' : '日幣卡刷';
+                
+                csvContent += `${expense.date},${descriptionSafe},${typeName},${jpy},${twd},${card}\n`; 
             });
 
-            // ==========================================================
             // 2. 新增卡別總計區塊 (TWD)
-            // ==========================================================
-            
             const cardTotals = calculateTwdCardTotals();
-            const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
+            const totalTwdForCard = expenses.filter(e => e.type === 'CARD_JPY').reduce((sum, expense) => sum + expense.twd_amount, 0);
 
-            // 兩行空白，作為分隔
             csvContent += "\n\n"; 
-            
-            // 標題
             csvContent += "台幣卡別總結 (NT$)\n"; 
+
             csvContent += "卡別,總金額(NT$)\n";
             
-            // 數據行
             Object.keys(cardTotals).sort().forEach(card => {
                 const cardAmount = cardTotals[card].toFixed(0);
                 csvContent += `${card},${cardAmount}\n`;
             });
 
-            // 總計行
-            csvContent += `總計(TWD),${totalTwd.toFixed(0)}\n`;
+            csvContent += `總計(TWD),${totalTwdForCard.toFixed(0)}\n`;
 
 
-            // ==========================================================
             // 3. 執行下載
-            // ==========================================================
-
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -521,105 +499,84 @@
             link.click();
             document.body.removeChild(link);
         }
-
-        // --- 數據處理：儲存和刷新 ---
-        function saveAndRefresh() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-            renderExpenses();
-            calculateTotal();
-        }
-
-        // --- 畫面更新：計算總額 ---
-        function calculateTotal() {
-            const totalJpy = expenses.reduce((sum, expense) => sum + expense.jpy_amount, 0);
-            const totalTwd = expenses.reduce((sum, expense) => sum + expense.twd_amount, 0);
-
-            // 日幣總合計 (無小數點)
-            totalJpyDisplay.textContent = '¥ ' + totalJpy.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
-            
-            // 台幣總合計 (無小數點)
-            totalTwdDisplay.textContent = 'NT$ ' + totalTwd.toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-        }
         
-        // --- 畫面更新：渲染列表 (重要：新增卡別分組合計) ---
+        // --- 畫面更新：渲染列表 (沿用上一個答案的清單分組邏輯) ---
         function renderExpenses() {
-            // 清空兩個容器
-            jpyExpenseListContainer.innerHTML = '';
-            twdExpenseListContainer.innerHTML = '';
+            jpyCashListContainer.innerHTML = '';
+            jpyCardListContainer.innerHTML = '';
 
             if (expenses.length === 0) {
-                jpyExpenseListContainer.innerHTML = '<p style="text-align: center; color: #999;">目前沒有日幣記錄。</p>';
-                twdExpenseListContainer.innerHTML = '<p style="text-align: center; color: #999;">目前沒有台幣記錄。</p>';
+                jpyCashListContainer.innerHTML = '<h4>💵 日幣現金支出 (¥)</h4><p style="text-align: center; color: #999;">目前沒有記錄。</p>';
+                jpyCardListContainer.innerHTML = '<h4>💳 日幣卡刷支出 (¥/NT$)</h4><p style="text-align: center; color: #999;">目前沒有記錄。</p>';
                 return;
             }
 
             // 1. 過濾支出列表
-            const jpyList = expenses.filter(e => e.jpy_amount > 0);
-            const twdList = expenses.filter(e => e.twd_amount > 0);
+            const jpyCashList = expenses.filter(e => e.type === 'CASH_JPY');
+            const jpyCardList = expenses.filter(e => e.type === 'CARD_JPY');
+            
+            // 2. 渲染 JPY 現金
+            jpyCashListContainer.innerHTML += `<h4>💵 日幣現金支出 (¥)</h4>`;
+            renderList(jpyCashListContainer, jpyCashList, 'CASH_JPY');
 
-            // 2. 輔助函數：渲染單一幣別的清單
-            function renderList(container, list, isJPY) {
+            // 3. 渲染 JPY 卡刷/所有台幣
+            jpyCardListContainer.innerHTML += `<h4>💳 日幣卡刷支出 (¥/NT$)</h4>`;
+            renderList(jpyCardListContainer, jpyCardList, 'CARD_JPY');
+            
+
+            // --- 輔助函數：渲染單一分組列表 ---
+            function renderList(container, list, listType) {
                 if (list.length === 0) {
-                    container.innerHTML = `<p style="text-align: center; color: #999;">目前沒有${isJPY ? '日幣' : '台幣'}記錄。</p>`;
+                    container.innerHTML += '<p style="text-align: center; color: #999;">目前沒有記錄。</p>';
                     return;
                 }
                 
-                const currencySymbol = isJPY ? '¥' : 'NT$';
-                const currencyLocale = isJPY ? 'ja-JP' : 'zh-TW';
-                const fractionDigits = 0; 
-                const amountKey = isJPY ? 'jpy_amount' : 'twd_amount';
+                const currencyLocale = 'ja-JP'; 
+                const amountKey = 'jpy_amount'; 
 
-                // a. 按日期分組
                 const groupedExpenses = list.reduce((groups, expense) => {
                     const date = expense.date;
-                    if (!groups[date]) {
-                        groups[date] = [];
-                    }
+                    if (!groups[date]) groups[date] = [];
                     groups[date].push(expense);
                     return groups;
                 }, {});
 
-                // b. 獲取排序後的日期
                 const sortedDates = Object.keys(groupedExpenses).sort().reverse();
-                
                 let htmlContent = '';
 
                 sortedDates.forEach(date => {
                     const dailyExpenses = groupedExpenses[date];
 
-                    // **[當日總支出計算]**
+                    // **[當日總支出計算]** (Primary 幣別 - JPY)
                     const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense[amountKey], 0);
-                    const dailyTotalFormatted = dailyTotal.toLocaleString(currencyLocale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
+                    const dailyTotalFormatted = dailyTotal.toLocaleString(currencyLocale, { maximumFractionDigits: 0 });
 
                     // 日期分組標題
                     htmlContent += `
                         <div class="date-group">
                             <span>${date}</span> 
-                            <span>合計: ${currencySymbol} ${dailyTotalFormatted}</span>
+                            <span>合計: ¥ ${dailyTotalFormatted}</span>
                         </div>
                     `;
-
-                    // **[卡別總計區 (僅限 TWD)]**
-                    if (!isJPY) {
+                    
+                    // **[卡別總計區 (僅限 CARD_JPY 的 TWD)]**
+                    if (listType === 'CARD_JPY') {
                         const cardTotals = dailyExpenses.reduce((totals, expense) => {
-                            const card = expense.card_used || '現金'; // 若無卡別，預設為現金
-                            if (!totals[card]) {
-                                totals[card] = 0;
-                            }
-                            // 這裡必須檢查 twd_amount 是否存在 (用於處理舊資料)，儘管 logic 已確保 twd_amount > 0
-                            totals[card] += expense.twd_amount || 0; 
+                            const card = expense.card_used || '未知卡別';
+                            const twdAmount = expense.twd_amount || 0;
+                            if (!totals[card]) totals[card] = 0;
+                            totals[card] += twdAmount; 
                             return totals;
                         }, {});
 
                         htmlContent += '<div class="card-summary-block">';
                         
-                        // 確保卡別名稱按照字母順序排序，讓顯示順序固定
                         Object.keys(cardTotals).sort().forEach(card => {
-                            const cardAmountFormatted = cardTotals[card].toLocaleString(currencyLocale, { maximumFractionDigits: fractionDigits });
+                            const cardAmountFormatted = cardTotals[card].toLocaleString('zh-TW', { maximumFractionDigits: 0 });
                             htmlContent += `
                                 <div class="card-summary-item">
-                                    <span>${card} 總計:</span>
-                                    <span style="font-weight: bold;">${currencySymbol} ${cardAmountFormatted}</span>
+                                    <span>${card} TWD 總計:</span>
+                                    <span style="font-weight: bold; color: #008080;">NT$ ${cardAmountFormatted}</span>
                                 </div>
                             `;
                         });
@@ -629,20 +586,28 @@
                     // 創建支出列表
                     htmlContent += `<ul class="expense-list">`;
 
-                    // 清單項目
                     dailyExpenses.forEach(expense => {
-                        const itemAmount = expense[amountKey];
-                        const itemAmountFormatted = itemAmount.toLocaleString(currencyLocale, { maximumFractionDigits: fractionDigits });
+                        const primaryAmount = expense[amountKey].toLocaleString(currencyLocale, { maximumFractionDigits: 0 });
                         
-                        // 針對台幣支出，在品項後加入卡別
-                        const descriptionWithCard = isJPY 
-                            ? expense.description 
-                            : `${expense.description} <span class="card-name-in-list">(${expense.card_used || '現金'})</span>`;
+                        let descriptionHtml = expense.description;
+                        let amountDisplay = `¥ ${primaryAmount}`;
+                        
+                        // 處理 CARD_JPY (要顯示 JPY/TWD/卡別)
+                        if (listType === 'CARD_JPY') {
+                            const secondaryAmount = expense.twd_amount.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
+                            descriptionHtml += ` <span class="twd-in-list"> (NT$ ${secondaryAmount})</span>`;
+                            descriptionHtml += ` <span class="card-name-in-list">(${expense.card_used})</span>`;
+                        }
+                        // 處理 CASH_JPY
+                        else if (listType === 'CASH_JPY') {
+                            descriptionHtml += ` <span class="card-name-in-list">(現金)</span>`;
+                        }
+
 
                         htmlContent += `
                             <li>
-                                <span class="item-description">${descriptionWithCard}</span>
-                                <span class="item-amount">${currencySymbol} ${itemAmountFormatted}</span>
+                                <span class="item-description">${descriptionHtml}</span>
+                                <span class="item-amount">${amountDisplay}</span>
                                 <button class="delete-btn" onclick="deleteExpense(${expense.id})">x</button>
                             </li>
                         `;
@@ -651,51 +616,64 @@
                     htmlContent += `</ul>`;
                 });
                 
-                container.innerHTML = htmlContent;
+                container.innerHTML += htmlContent;
             }
-
-            // 3. 呼叫輔助函數，分別渲染 JPY 和 TWD
-            renderList(jpyExpenseListContainer, jpyList, true);
-            renderList(twdExpenseListContainer, twdList, false);
+        }
+        
+        // --- 數據處理：儲存和刷新 ---
+        function saveAndRefresh() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+            renderExpenses();
+            calculateTotal();
         }
         
         // --- 初始化 ---
         function init() {
             const storedExpenses = localStorage.getItem(STORAGE_KEY);
             if (storedExpenses) {
-                // 由於新增了 card_used 欄位，這裡需要處理舊資料，確保每個 expense 都有 card_used
                 let parsedExpenses = JSON.parse(storedExpenses);
-                // 填充舊資料的 card_used 欄位，預設為 '現金'
-                expenses = parsedExpenses.map(exp => ({
-                    ...exp,
-                    card_used: exp.card_used || (exp.twd_amount > 0 ? '現金' : '')
-                }));
+                expenses = parsedExpenses.map(exp => {
+                    // 兼容舊資料：沒有 type 欄位時，自動判斷
+                    if (!exp.type) {
+                         // 舊資料修正邏輯 (與上一個答案相同，確保資料結構正確)
+                         if (exp.twd_amount > 0) {
+                            exp.type = 'CARD_JPY';
+                         } else {
+                            exp.type = 'CASH_JPY';
+                         }
+                    }
+                    exp.card_used = exp.card_used || (exp.type === 'CASH_JPY' ? '日幣現金' : '');
+                    return exp;
+                });
             }
+            
+            initCardSelects();
             renderExpenses();
             calculateTotal();
             
-            // 設定 Enter 鍵提交
-            jpyInput.addEventListener('keydown', function(event) {
+            // 綁定 Enter 鍵事件
+            jpyCashInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
-                    addExpense();
+                    addExpense('CASH_JPY');
                 }
             });
-            twdInput.addEventListener('keydown', function(event) {
+            
+            // CARD_JPY 欄位的 Enter 鍵處理
+            jpyCardInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
-                    // 如果輸入台幣，檢查卡別選單是否開啟
-                    if (twdCardSelect.value) {
-                       addExpense();
-                    } else {
-                       // 僅移動焦點到選單
-                       twdCardSelect.focus();
-                       event.preventDefault(); // 阻止 Enter 觸發表單提交
-                    }
+                    twdCardInput.focus();
+                    event.preventDefault();
                 }
             });
-            // 允許在下拉選單按下 Enter 鍵時提交
-             twdCardSelect.addEventListener('keydown', function(event) {
+            twdCardInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
-                    addExpense();
+                    twdCardSelectJPY.focus();
+                    event.preventDefault();
+                }
+            });
+            twdCardSelectJPY.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    addExpense('CARD_JPY');
                 }
             });
         }
