@@ -341,6 +341,15 @@
             let cardUsed = ''; 
             let type = '';
             let success = false;
+            
+            // --- 新增：深夜自動補正日期邏輯 ---
+            let now = new Date();
+            // 如果現在是凌晨 0 點到 5 點之間，日期自動減一天（視為昨天的消費）
+            if (now.getHours() < 5) {
+                now.setDate(now.getDate() - 1);
+            }
+            const autoDate = formatDate(now); // 使用你原本就有的 formatDate 函數
+            // --------------------------------
 
             const jpyText = jpyAmountInput.value.trim();
             const twdText = twdCardInput.value.trim();
@@ -391,7 +400,7 @@
                     jpy_amount: amountJPY,
                     twd_amount: amountTWD,
                     description: description, 
-                    date: getTodayDateString(),
+                    date: autoDate, // 這裡改成使用上面計算出的 autoDate
                     card_used: cardUsed,
                     type: type 
                 };
